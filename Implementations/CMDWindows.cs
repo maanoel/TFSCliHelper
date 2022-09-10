@@ -10,13 +10,14 @@ namespace TFSCliHelper
     public CMDWindows()
     {
       _cmd = new Process();
-      _cmd.StartInfo.FileName = "cmd.exe";
+      _cmd.StartInfo.FileName = @"cmd.exe";
       _cmd.StartInfo.WorkingDirectory = @"C:\";
       _cmd.StartInfo.RedirectStandardError = true;
       _cmd.StartInfo.RedirectStandardInput = true;
       _cmd.StartInfo.RedirectStandardOutput = true;
       _cmd.StartInfo.CreateNoWindow = true;
       _cmd.StartInfo.UseShellExecute = false;
+      _cmd.StartInfo.Arguments = "/K ";
       _cmd.Start();
     }
 
@@ -24,6 +25,12 @@ namespace TFSCliHelper
     {
       _cmd.Close();
     }
+
+    public void Wait()
+    {
+      _cmd.WaitForExit();
+    }
+
 
     public string Read()
     {
@@ -41,6 +48,7 @@ namespace TFSCliHelper
 
     public void Write(string command)
     {
+      _cmd.StartInfo.Arguments = "/K " + command;
       _cmd.StandardInput.WriteLine(command);
       _cmd.StandardInput.Flush();
     }

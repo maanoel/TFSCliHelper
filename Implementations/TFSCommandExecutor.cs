@@ -29,7 +29,6 @@ namespace TFSCliHelper
 
         Prompt.Write(generatedCommand);
         Console.WriteLine(Prompt.Read());
-        Console.WriteLine(generatedCommand);
       }
 
       Prompt.Finish();

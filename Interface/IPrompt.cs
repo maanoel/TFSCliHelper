@@ -5,5 +5,7 @@
     void Write(string command);
     string Read();
     void Finish();
+
+    void Wait();
   }
 }
