@@ -15,6 +15,14 @@
 
     public void Build()
     {
+      GetFrontFiles();
+      GetBackFiles();
+
+      Executor.Execute();
+    }
+
+    private void GetFrontFiles()
+    {
       Executor.AddCommand(new Command("cd", EnumVersionsFront._32));
       Executor.AddCommand(new Command($"{TFEXEPATH} get", TFSServerPathFront._32 + recursive));
 
@@ -29,8 +37,24 @@
 
       Executor.AddCommand(new Command("cd", EnumVersionsFront._2209));
       Executor.AddCommand(new Command($"{TFEXEPATH} get", TFSServerPathFront._2209 + recursive));
+    }
 
-      Executor.Execute();
+    private void GetBackFiles()
+    {
+      Executor.AddCommand(new Command("cd", EnumVersionsBack._32));
+      Executor.AddCommand(new Command($"{TFEXEPATH} get", TFSServerPathFront._32 + recursive));
+
+      Executor.AddCommand(new Command("cd", EnumVersionsBack._33));
+      Executor.AddCommand(new Command($"{TFEXEPATH} get", TFSServerPathFront._33 + recursive));
+
+      Executor.AddCommand(new Command("cd", EnumVersionsBack._34));
+      Executor.AddCommand(new Command($"{TFEXEPATH} get", TFSServerPathFront._34 + recursive));
+
+      Executor.AddCommand(new Command("cd", EnumVersionsBack._2205));
+      Executor.AddCommand(new Command($"{TFEXEPATH} get", TFSServerPathFront._2205 + recursive));
+
+      Executor.AddCommand(new Command("cd", EnumVersionsBack._2209));
+      Executor.AddCommand(new Command($"{TFEXEPATH} get", TFSServerPathFront._2209 + recursive));
     }
   }
 }
