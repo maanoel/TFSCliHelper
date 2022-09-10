@@ -26,9 +26,9 @@ namespace TFSCliHelper
       foreach (var command in Commands)
       {
         var generatedCommand = command.Generate();
+        var commandReturn = Prompt.Write(generatedCommand);
 
-        Prompt.Write(generatedCommand);
-        Console.WriteLine(Prompt.Read());
+        Console.WriteLine(commandReturn);
       }
 
       Prompt.Finish();

@@ -31,8 +31,14 @@ namespace TFSCliHelper
       _cmd.WaitForExit();
     }
 
+    public string Write(string command)
+    {
+      _cmd.StandardInput.WriteLine(command);
+      _cmd.StandardInput.Flush();
+      return Read();
+    }
 
-    public string Read()
+    private string Read()
     {
       StringBuilder stringBuilder = new StringBuilder();
       string promptLine = null;
@@ -44,13 +50,6 @@ namespace TFSCliHelper
       } while (!string.IsNullOrEmpty(promptLine));
 
       return stringBuilder.ToString();
-    }
-
-    public void Write(string command)
-    {
-      _cmd.StartInfo.Arguments = "/K " + command;
-      _cmd.StandardInput.WriteLine(command);
-      _cmd.StandardInput.Flush();
     }
   }
 }
