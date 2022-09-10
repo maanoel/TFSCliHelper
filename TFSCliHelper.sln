@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.32228.343
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TFSCliHelper", "TFSCliHelper.csproj", "{2CEE906A-EA99-40E3-B233-3F4308F50501}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2CEE906A-EA99-40E3-B233-3F4308F50501}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2CEE906A-EA99-40E3-B233-3F4308F50501}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2CEE906A-EA99-40E3-B233-3F4308F50501}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2CEE906A-EA99-40E3-B233-3F4308F50501}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0BFD0FB8-43CD-49D4-9E0F-C1774FF48A35}
+	EndGlobalSection
+EndGlobal
