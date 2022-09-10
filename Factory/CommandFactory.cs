@@ -13,6 +13,9 @@
           new GetSingleVersionBuilder()
           .Build(arg.ToLower());
           break;
+        case "kill host":
+          new TaskHostbuilder().Build();
+          break;
         default:
           throw new InvalidCommandException("Command not implemented.");
       }

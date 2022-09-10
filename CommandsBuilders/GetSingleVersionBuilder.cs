@@ -54,9 +54,8 @@
     {
       Executor.AddCommand(new Command("cd", _versionFront));
       Executor.AddCommand(new Command($"{TFEXEPATH} get", _versionFront + recursive));
-
       Executor.AddCommand(new Command("cd", _versionBack));
-      Executor.AddCommand(new Command($"{_versionFront} get", _versionFront + recursive));
+      Executor.AddCommand(new Command($"{_versionFront} get", _versionBack + recursive));
     }
 
     private void ExecuteCommands()
