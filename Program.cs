@@ -1,7 +1,4 @@
-﻿using System;
-using System.Diagnostics;
-
-namespace TFSCliHelper
+﻿namespace TFSCliHelper
 {
   class Program
   {
