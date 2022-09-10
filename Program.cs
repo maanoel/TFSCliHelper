@@ -8,7 +8,14 @@
       System.Console.WriteLine("Please type the command you want to execute...");
       var arg = System.Console.ReadLine();
 
-      CommandFactory.Create()
+      try
+      {
+        CommandFactory.Create(arg);
+      }
+      catch (InvalidCommandException ex)
+      {
+        System.Console.WriteLine(ex.Message);
+      }
     }
   }
 }
