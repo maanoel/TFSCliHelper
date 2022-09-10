@@ -9,6 +9,10 @@
         case "get all":
           new GetAllVersionsBuilder().Build();
           break;
+        case string a when arg.ToLower().Contains("get version"):
+          new GetSingleVersionBuilder()
+          .Build(arg.ToLower());
+          break;
         default:
           throw new InvalidCommandException("Command not implemented.");
       }

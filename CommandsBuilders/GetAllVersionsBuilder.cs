@@ -7,7 +7,6 @@ namespace TFSCliHelper
     private string TFEXEPATH = @"""C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\Common7\IDE\CommonExtensions\Microsoft\TeamFoundation\Team Explorer\TF.exe""";
     private readonly string recursive = " /recursive";
 
-
     public ICommandExecutor Executor { get; private set; }
     private readonly List<string> _versionsFront;
     private readonly List<string> _versionsBack;
