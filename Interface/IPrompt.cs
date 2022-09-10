@@ -2,7 +2,7 @@
 {
   public interface IPrompt
   {
-    string Write(string command);
+    void Write(string command);
     void Finish();
     void Wait();
   }

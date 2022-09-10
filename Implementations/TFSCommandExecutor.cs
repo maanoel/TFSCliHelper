@@ -26,12 +26,12 @@ namespace TFSCliHelper
       foreach (var command in Commands)
       {
         var generatedCommand = command.Generate();
-        var commandReturn = Prompt.Write(generatedCommand);
 
-        Console.WriteLine(commandReturn);
+        Prompt.Write(generatedCommand);
       }
 
-      Prompt.Finish();
+      //Prompt.Execute();
+      //Prompt.Finish();
     }
   }
 }

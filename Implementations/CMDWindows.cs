@@ -6,18 +6,17 @@ namespace TFSCliHelper
   public class CMDWindows : IPrompt
   {
     private Process _cmd;
+    private ProcessStartInfo _info;
 
     public CMDWindows()
     {
+      _info = new ProcessStartInfo();
+      _info.FileName = "cmd.exe";
+      _info.RedirectStandardInput = true;
+      _info.Verb = "runas";
+
       _cmd = new Process();
-      _cmd.StartInfo.FileName = @"cmd.exe";
-      _cmd.StartInfo.WorkingDirectory = @"C:\";
-      _cmd.StartInfo.RedirectStandardError = true;
-      _cmd.StartInfo.RedirectStandardInput = true;
-      _cmd.StartInfo.RedirectStandardOutput = true;
-      _cmd.StartInfo.CreateNoWindow = true;
-      _cmd.StartInfo.UseShellExecute = false;
-      _cmd.StartInfo.Arguments = "/K ";
+      _cmd.StartInfo = _info;
       _cmd.Start();
     }
 
@@ -31,14 +30,18 @@ namespace TFSCliHelper
       _cmd.WaitForExit();
     }
 
-    public string Write(string command)
+    public void Write(string command)
     {
       _cmd.StandardInput.WriteLine(command);
-      _cmd.StandardInput.Flush();
-      return Read();
     }
 
-    private string Read()
+    public void Execute()
+    {
+      _cmd.StandardInput.Flush();
+      _cmd.StandardInput.Close();
+    }
+
+    public string Read()
     {
       StringBuilder stringBuilder = new StringBuilder();
       string promptLine = null;
