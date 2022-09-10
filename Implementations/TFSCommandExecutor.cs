@@ -29,9 +29,6 @@ namespace TFSCliHelper
 
         Prompt.Write(generatedCommand);
       }
-
-      //Prompt.Execute();
-      //Prompt.Finish();
     }
   }
 }
