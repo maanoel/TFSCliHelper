@@ -1,6 +1,6 @@
 ﻿namespace TFSCliHelper
 {
-  public struct TFSServerPathBack
+  public struct StructTFSServerPathBack
   {
     public static string _32 = @"$/RM/Legado/12.1.32/Sau-PEP";
     public static string _33 = @"$/RM/Legado/12.1.33/Sau-PEP";

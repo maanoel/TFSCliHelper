@@ -4,9 +4,12 @@
   {
     static void Main(string[] args)
     {
-      new ComandLineInterface()
+      while (true) {
+
+        new ComandLineInterface()
         .WaitCommand()
         .Run();
+      }
     }
   }
 }
