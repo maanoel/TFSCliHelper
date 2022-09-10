@@ -4,6 +4,6 @@
   {
     void WelcomeMessage();
     ICommandLineInterface WaitCommand();
-    void Run();
+    ICommandLineInterface Run();
   }
 }

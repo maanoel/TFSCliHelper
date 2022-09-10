@@ -16,7 +16,7 @@
       return this;
     }
 
-    public void Run()
+    public ICommandLineInterface Run()
     {
       try
       {
@@ -26,6 +26,8 @@
       {
         System.Console.WriteLine(ex.Message);
       }
+
+      return this;
     }
   }
 
