@@ -1,4 +1,6 @@
-﻿namespace TFSCliHelper
+﻿using System.Collections.Generic;
+
+namespace TFSCliHelper
 {
   public class GetAllVersionsBuilder : ICommandBuilder
   {
@@ -7,9 +9,27 @@
 
 
     public ICommandExecutor Executor { get; private set; }
+    private readonly List<string> _versionsFront;
+    private readonly List<string> _versionsBack;
 
     public GetAllVersionsBuilder()
     {
+      _versionsFront = new List<string> {
+        StructVersionsFront._32,
+        StructVersionsFront._33,
+        StructVersionsFront._34,
+        StructVersionsFront._2205,
+        StructVersionsFront._2209,
+      };
+
+      _versionsBack = new List<string> {
+        StructVersionsBack._32,
+        StructVersionsBack._33,
+        StructVersionsBack._34,
+        StructVersionsBack._2205,
+        StructVersionsBack._2209,
+      };
+
       Executor = new TFSCommandExecutor();
     }
 
@@ -17,44 +37,29 @@
     {
       GetFrontFiles();
       GetBackFiles();
-
-      Executor.Execute();
+      ExecuteCommands();
     }
 
     private void GetFrontFiles()
     {
-      Executor.AddCommand(new Command("cd", EnumVersionsFront._32));
-      Executor.AddCommand(new Command($"{TFEXEPATH} get", TFSServerPathFront._32 + recursive));
-
-      Executor.AddCommand(new Command("cd", EnumVersionsFront._33));
-      Executor.AddCommand(new Command($"{TFEXEPATH} get", TFSServerPathFront._33 + recursive));
-
-      Executor.AddCommand(new Command("cd", EnumVersionsFront._34));
-      Executor.AddCommand(new Command($"{TFEXEPATH} get", TFSServerPathFront._34 + recursive));
-
-      Executor.AddCommand(new Command("cd", EnumVersionsFront._2205));
-      Executor.AddCommand(new Command($"{TFEXEPATH} get", TFSServerPathFront._2205 + recursive));
-
-      Executor.AddCommand(new Command("cd", EnumVersionsFront._2209));
-      Executor.AddCommand(new Command($"{TFEXEPATH} get", TFSServerPathFront._2209 + recursive));
+      foreach (var version in _versionsFront)
+      {
+        Executor.AddCommand(new Command("cd", version));
+        Executor.AddCommand(new Command($"{TFEXEPATH} get", version + recursive));
+      }
     }
 
     private void GetBackFiles()
     {
-      Executor.AddCommand(new Command("cd", EnumVersionsBack._32));
-      Executor.AddCommand(new Command($"{TFEXEPATH} get", TFSServerPathFront._32 + recursive));
-
-      Executor.AddCommand(new Command("cd", EnumVersionsBack._33));
-      Executor.AddCommand(new Command($"{TFEXEPATH} get", TFSServerPathFront._33 + recursive));
-
-      Executor.AddCommand(new Command("cd", EnumVersionsBack._34));
-      Executor.AddCommand(new Command($"{TFEXEPATH} get", TFSServerPathFront._34 + recursive));
-
-      Executor.AddCommand(new Command("cd", EnumVersionsBack._2205));
-      Executor.AddCommand(new Command($"{TFEXEPATH} get", TFSServerPathFront._2205 + recursive));
-
-      Executor.AddCommand(new Command("cd", EnumVersionsBack._2209));
-      Executor.AddCommand(new Command($"{TFEXEPATH} get", TFSServerPathFront._2209 + recursive));
+      foreach (var version in _versionsBack)
+      {
+        Executor.AddCommand(new Command("cd", version));
+        Executor.AddCommand(new Command($"{TFEXEPATH} get", version + recursive));
+      }
+    }
+    private void ExecuteCommands()
+    {
+      Executor.Execute();
     }
   }
 }

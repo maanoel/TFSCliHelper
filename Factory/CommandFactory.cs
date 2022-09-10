@@ -6,7 +6,7 @@
     {
       switch (arg.ToLower())
       {
-        case "getall":
+        case "get all":
           new GetAllVersionsBuilder().Build();
           break;
         default:

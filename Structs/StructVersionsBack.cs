@@ -1,6 +1,6 @@
 ﻿namespace TFSCliHelper
 {
-  public struct EnumVersionsBack
+  public struct StructVersionsBack
   {
     public static string _32 = @"C:\RM\legado\12.1.32\Sau-PEP\";
     public static string _33 = @"C:\RM\legado\12.1.33\Sau-PEP\";
