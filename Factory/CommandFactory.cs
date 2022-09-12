@@ -17,7 +17,7 @@
           new BuildAllVersionsBuilder().Build();
           break;
         case string a when arg.ToLower().Contains("build version"):
-          new GetSingleVersionBuilder()
+          new BuildSingleVersionBuilder()
           .Build(arg.ToLower());
           break;
         case "open host":
