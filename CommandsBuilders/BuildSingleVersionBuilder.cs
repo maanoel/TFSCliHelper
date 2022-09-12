@@ -84,6 +84,11 @@ namespace TFSCliHelper
           _pathBack = StructPepSlnPath._2209;
           _pathSau = StructSauSlnPath._2209;
           break;
+        case string a when argument.EndsWith("atual"):
+          _pathLib = StructLibSlnPath.atual;
+          _pathBack = StructPepSlnPath.atual;
+          _pathSau = StructSauSlnPath.atual;
+          break;
         default:
           throw new InvalidCommandException("Command not implemented.");
       }
