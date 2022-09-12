@@ -1,6 +1,6 @@
 ﻿namespace TFSCliHelper
 {
-  public struct TFSServerPathFront
+  public struct StructTFSServerPathFront
   {
     public static string _32 = @"$/RM/Legado/12.1.32/FrameHTML/web_src/app/Sau/PEP";
     public static string _33 = @"$/RM/Legado/12.1.33/FrameHTML/web_src/app/Sau/PEP";

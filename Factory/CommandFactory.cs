@@ -13,6 +13,14 @@
           new GetSingleVersionBuilder()
           .Build(arg.ToLower());
           break;
+        case "build all":
+          new BuildAllVersionsBuilder().Build();
+          break;
+        case string a when arg.ToLower().Contains("build version"):
+          new GetSingleVersionBuilder()
+          .Build(arg.ToLower());
+          break;
+        case "open host":
         case "kill host":
           new TaskHostbuilder().Build();
           break;
