@@ -122,7 +122,6 @@ namespace TFSCliHelper
 
           Executor.AddCommand(new Command($"{TFEXEPATH} merge /candidate ", _pathFrontTfs + " " + version + " " + _recursive));
           Executor.AddCommand(new Command($"{TFEXEPATH} merge /baseless /version:{_changeSet}", _pathFrontTfs + " " + version + " " + _recursive));
-
         }
       }
     }
