@@ -19,6 +19,16 @@ namespace TFSCliHelper
       Value = value;
     }
 
+    public Command(string value)
+    {
+      if (string.IsNullOrEmpty(value))
+      {
+        throw new ArgumentException("Valor do comando não definido.");
+      }
+
+      Value = value;
+    }
+
     public string Name { get;  private set; }
     public string Value { get; private set; }
 

@@ -20,7 +20,9 @@
           new BuildSingleVersionBuilder()
           .Build(arg.ToLower());
           break;
-        case "open host":
+        case string a when arg.ToLower().Contains("open host"):
+          new OpenHostBuilder().Build(arg.ToLower());
+          break;
         case "kill host":
           new TaskHostbuilder().Build();
           break;
