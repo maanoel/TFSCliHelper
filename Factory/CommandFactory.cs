@@ -27,7 +27,7 @@
           new TaskHostBuilder().Build();
           break;
         case string a when arg.ToLower().Contains("merge"):
-          new TaskHostBuilder().Build();
+          new MergeHostBuilder().Build();
           break;
         default:
           throw new InvalidCommandException("Command not implemented.");
