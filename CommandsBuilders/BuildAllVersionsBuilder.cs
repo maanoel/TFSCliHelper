@@ -42,7 +42,6 @@ namespace TFSCliHelper
     public void Build()
     {
       GoToDirectory();
-      BuildLib();
       BuildSau();
       BuildPep();
       ExecuteCommands();
@@ -53,13 +52,13 @@ namespace TFSCliHelper
       Executor.AddCommand(new Command($"cd ", _msBuildDirectory));
     }
 
-    private void BuildLib()
-    {
-      foreach (var path in _pathSlnLib)
-      {
-        Executor.AddCommand(new Command($"msbuild ", path));
-      }
-    }
+    //private void BuildLib()
+    //{
+    //  foreach (var path in _pathSlnLib)
+    //  {
+    //    Executor.AddCommand(new Command($"msbuild ", path));
+    //  }
+    //}
 
     private void BuildSau()
     {

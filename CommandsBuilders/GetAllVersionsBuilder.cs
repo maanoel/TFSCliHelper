@@ -10,6 +10,10 @@ namespace TFSCliHelper
     public ICommandExecutor Executor { get; private set; }
     private readonly List<string> _versionsFront;
     private readonly List<string> _versionsBack;
+    private readonly List<string> _pathFront;
+    private readonly List<string> _pathBack;
+    private readonly List<string> _versionsSau;
+    private readonly List<string> _pathSau;
 
     public GetAllVersionsBuilder()
     {
@@ -21,12 +25,44 @@ namespace TFSCliHelper
         StructVersionsFront._2209,
       };
 
+      _pathFront = new List<string> {
+        StructTFSServerPathFront._32,
+        StructTFSServerPathFront._33,
+        StructTFSServerPathFront._34,
+        StructTFSServerPathFront._2205,
+        StructTFSServerPathFront._2209,
+      };
+
       _versionsBack = new List<string> {
         StructVersionsBack._32,
         StructVersionsBack._33,
         StructVersionsBack._34,
         StructVersionsBack._2205,
         StructVersionsBack._2209,
+      };
+
+      _pathBack = new List<string> {
+        StructTFSServerPathBack._32,
+        StructTFSServerPathBack._33,
+        StructTFSServerPathBack._34,
+        StructTFSServerPathBack._2205,
+        StructTFSServerPathBack._2209,
+      };
+
+      _versionsSau = new List<string> {
+        StructVersionsSau._32,
+        StructVersionsSau._33,
+        StructVersionsSau._34,
+        StructVersionsSau._2205,
+        StructVersionsSau._2209,
+      };
+
+      _pathSau = new List<string> {
+        StructTFSServerPathSau._32,
+        StructTFSServerPathSau._33,
+        StructTFSServerPathSau._34,
+        StructTFSServerPathSau._2205,
+        StructTFSServerPathSau._2209,
       };
 
       Executor = new TFSCommandExecutor();
@@ -36,26 +72,37 @@ namespace TFSCliHelper
     {
       GetFrontFiles();
       GetBackFiles();
+      GetSauFiles();
       ExecuteCommands();
     }
 
     private void GetFrontFiles()
     {
-      foreach (var version in _versionsFront)
+      for (int i = 0; i < _versionsFront.Count; i++)
       {
-        Executor.AddCommand(new Command("cd", version));
-        Executor.AddCommand(new Command($"{TFEXEPATH} get", version + recursive));
+        Executor.AddCommand(new Command("cd", _versionsFront[i]));
+        Executor.AddCommand(new Command($"{TFEXEPATH} get", _pathFront[i] + recursive));
       }
     }
 
     private void GetBackFiles()
     {
-      foreach (var version in _versionsBack)
+      for (int i = 0; i < _versionsBack.Count; i++)
       {
-        Executor.AddCommand(new Command("cd", version));
-        Executor.AddCommand(new Command($"{TFEXEPATH} get", version + recursive));
+        Executor.AddCommand(new Command("cd", _versionsBack[i]));
+        Executor.AddCommand(new Command($"{TFEXEPATH} get", _pathBack[i] + recursive));
       }
     }
+
+    private void GetSauFiles()
+    {
+      for (int i = 0; i < _versionsSau.Count; i++)
+      {
+        Executor.AddCommand(new Command("cd", _versionsSau[i]));
+        Executor.AddCommand(new Command($"{TFEXEPATH} get", _pathSau[i] + recursive));
+      }
+    }
+
     private void ExecuteCommands()
     {
       Executor.Execute();
