@@ -107,14 +107,20 @@ namespace TFSCliHelper
 
     private void GetVersionFiles()
     {
+      SetWorkSpace();
       MergeFront();
       MergeBack();
       MergeSau();
     }
 
+    private void SetWorkSpace()
+    {
+      Executor.AddCommand(new Command($"{TFEXEPATH}", @"workspaces / collection:http://tfs2015.totvs.com.br\CD-BH"));
+    }
+
     private void MergeFront()
     {
-      if (_project == "front")
+      if (_project.Equals("front"))
       {
         foreach (var version in _pathsFront)
         {
@@ -128,9 +134,9 @@ namespace TFSCliHelper
 
     private void MergeBack()
     {
-      if (_project == "back")
+      if (_project.Equals("back"))
       {
-        foreach (var version in _pathsFront)
+        foreach (var version in _pathsBack)
         {
           if (version.Equals(_pathBackTfs)) continue;
 
@@ -142,7 +148,7 @@ namespace TFSCliHelper
 
     private void MergeSau()
     {
-      if (_project == "sau")
+      if (_project.Equals("sau"))
       {
         foreach (var version in _pathsSau)
         {
