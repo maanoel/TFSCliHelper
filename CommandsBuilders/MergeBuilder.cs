@@ -2,7 +2,7 @@
 
 namespace TFSCliHelper
 {
-  public class MergeHostBuilder : ICommandBuilder
+  public class MergeBuilder : ICommandBuilder
   {
     private string TFEXEPATH = @"""C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\Common7\IDE\CommonExtensions\Microsoft\TeamFoundation\Team Explorer\TF.exe""";
     private string _pathFrontTfs;
@@ -20,7 +20,7 @@ namespace TFSCliHelper
 
     public ICommandExecutor Executor { get; private set; }
 
-    public MergeHostBuilder()
+    public MergeBuilder()
     {
       Executor = new TFSCommandExecutor();
 
