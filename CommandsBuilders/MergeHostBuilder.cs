@@ -114,7 +114,7 @@ namespace TFSCliHelper
 
     private void MergeFront()
     {
-      if (_project.ToLower() == "front")
+      if (_project == "front")
       {
         foreach (var version in _pathsFront)
         {
@@ -129,7 +129,7 @@ namespace TFSCliHelper
 
     private void MergeBack()
     {
-      if (_project.ToLower() == "back")
+      if (_project == "back")
       {
         foreach (var version in _pathsFront)
         {
@@ -143,7 +143,7 @@ namespace TFSCliHelper
 
     private void MergeSau()
     {
-      if (_project.ToLower() == "sau")
+      if (_project == "sau")
       {
         foreach (var version in _pathsSau)
         {
