@@ -24,7 +24,10 @@
           new OpenHostBuilder().Build(arg.ToLower());
           break;
         case "kill host":
-          new TaskHostbuilder().Build();
+          new TaskHostBuilder().Build();
+          break;
+        case string a when arg.ToLower().Contains("merge"):
+          new TaskHostBuilder().Build();
           break;
         default:
           throw new InvalidCommandException("Command not implemented.");

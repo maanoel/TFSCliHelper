@@ -1,10 +1,10 @@
 ﻿namespace TFSCliHelper
 {
-  public class TaskHostbuilder : ICommandBuilder
+  public class TaskHostBuilder : ICommandBuilder
   {
     public ICommandExecutor Executor { get; private set; }
 
-    public TaskHostbuilder()
+    public TaskHostBuilder()
     {
       Executor = new TFSCommandExecutor();
     }
