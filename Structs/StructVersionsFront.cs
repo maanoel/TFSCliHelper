@@ -7,6 +7,7 @@
     public static string _34 = @"C:\RM\legado\12.1.34\FrameHTML\web_src\app\Sau\PEP\";
     public static string _2205 = @"C:\RM\legado\12.1.2205\FrameHTML\web_src\app\Sau\PEP\";
     public static string _2209 = @"C:\RM\legado\12.1.2209\FrameHTML\web_src\app\Sau\PEP\";
+    public static string atual = @"C:\RM\Atual\Release\FrameHTML\web_src\app\Sau\PEP\";
   }
 }
 

@@ -18,6 +18,7 @@ namespace TFSCliHelper
         StructLibSlnPath._34,
         StructLibSlnPath._2205,
         StructLibSlnPath._2209,
+        StructLibSlnPath.atual,
       };
 
       _pathSlnSau = new List<string> {
@@ -26,6 +27,7 @@ namespace TFSCliHelper
         StructSauSlnPath._34,
         StructSauSlnPath._2205,
         StructSauSlnPath._2209,
+        StructSauSlnPath.atual,
       };
 
       _pathSlnPep = new List<string> {
@@ -34,6 +36,7 @@ namespace TFSCliHelper
         StructPepSlnPath._34,
         StructPepSlnPath._2205,
         StructPepSlnPath._2209,
+        StructPepSlnPath.atual,
       };
 
       Executor = new TFSCommandExecutor();

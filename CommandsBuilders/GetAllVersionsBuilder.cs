@@ -23,6 +23,7 @@ namespace TFSCliHelper
         StructVersionsFront._34,
         StructVersionsFront._2205,
         StructVersionsFront._2209,
+        StructVersionsFront.atual
       };
 
       _pathFront = new List<string> {
@@ -31,6 +32,9 @@ namespace TFSCliHelper
         StructTFSServerPathFront._34,
         StructTFSServerPathFront._2205,
         StructTFSServerPathFront._2209,
+        StructTFSServerPathFront._2209,
+        StructTFSServerPathFront.atual,
+
       };
 
       _versionsBack = new List<string> {
@@ -39,6 +43,7 @@ namespace TFSCliHelper
         StructVersionsBack._34,
         StructVersionsBack._2205,
         StructVersionsBack._2209,
+        StructVersionsBack.atual,
       };
 
       _pathBack = new List<string> {
@@ -47,6 +52,7 @@ namespace TFSCliHelper
         StructTFSServerPathBack._34,
         StructTFSServerPathBack._2205,
         StructTFSServerPathBack._2209,
+        StructTFSServerPathBack.atual,
       };
 
       _versionsSau = new List<string> {
@@ -55,6 +61,7 @@ namespace TFSCliHelper
         StructVersionsSau._34,
         StructVersionsSau._2205,
         StructVersionsSau._2209,
+        StructVersionsSau.atual,
       };
 
       _pathSau = new List<string> {
@@ -63,6 +70,7 @@ namespace TFSCliHelper
         StructTFSServerPathSau._34,
         StructTFSServerPathSau._2205,
         StructTFSServerPathSau._2209,
+        StructTFSServerPathSau.atual,
       };
 
       Executor = new TFSCommandExecutor();

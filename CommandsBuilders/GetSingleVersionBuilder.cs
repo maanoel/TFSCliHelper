@@ -69,6 +69,14 @@
           _pathSauFolder = StructVersionsSau._2209;
           _pathSauTfs = StructTFSServerPathSau._2209;
           break;
+        case string a when command.EndsWith("atual"):
+          _pathFrontFolder = StructVersionsFront.atual;
+          _pathFrontTfs = StructTFSServerPathFront.atual;
+          _pathBackFolder = StructVersionsBack.atual;
+          _pathBackTfs = StructTFSServerPathBack.atual;
+          _pathSauFolder = StructVersionsSau.atual;
+          _pathSauTfs = StructTFSServerPathSau.atual;
+          break;
         default:
           throw new InvalidCommandException("Command not implemented.");
       }
