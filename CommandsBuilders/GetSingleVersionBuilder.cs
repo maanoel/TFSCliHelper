@@ -34,6 +34,8 @@
           _pathFrontTfs = StructTFSServerPathFront._32;
           _pathBackFolder = StructVersionsBack._32;
           _pathBackTfs = StructTFSServerPathBack._32;
+          _pathSauFolder = StructTFSServerPathSau._32;
+          _pathSauTfs = 
           break;
         case string a when command.EndsWith("33"):
           _pathFrontFolder = StructVersionsFront._33;
