@@ -20,7 +20,8 @@
     {
       try
       {
-        CommandFactory.Create(_arg);
+        ICommandBuilder command = CommandFactory.Create(_arg);
+        command.Build(_arg);
       }
       catch (InvalidCommandException ex)
       {

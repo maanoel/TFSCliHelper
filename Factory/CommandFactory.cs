@@ -2,33 +2,24 @@
 {
   public static class CommandFactory
   {
-    public static void Create(string arg)
+    public static ICommandBuilder Create(string arg)
     {
       switch (arg.ToLower())
       {
         case "get all":
-          new GetAllVersionsBuilder().Build();
-          break;
+          return new GetAllVersionsBuilder();
         case string a when arg.ToLower().Contains("get version"):
-          new GetSingleVersionBuilder()
-          .Build(arg.ToLower());
-          break;
+          return  new GetSingleVersionBuilder();
         case "build all":
-          new BuildAllVersionsBuilder().Build();
-          break;
+          return new BuildAllVersionsBuilder();
         case string a when arg.ToLower().Contains("build version"):
-          new BuildSingleVersionBuilder()
-          .Build(arg.ToLower());
-          break;
+          return new BuildSingleVersionBuilder();
         case string a when arg.ToLower().Contains("open host"):
-          new OpenHostBuilder().Build(arg.ToLower());
-          break;
+          return new OpenHostBuilder();
         case "kill host":
-          new TaskHostBuilder().Build();
-          break;
+          return new TaskHostBuilder();
         case string a when arg.ToLower().Contains("merge"):
-          new MergeBuilder().Build(arg.ToLower());
-          break;
+          return new MergeBuilder();
         default:
           throw new InvalidCommandException("Command not implemented.");
       }

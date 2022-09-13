@@ -9,7 +9,7 @@
       Executor = new TFSCommandExecutor();
     }
 
-    public void Build()
+    public void Build(string arguments)
     {
       Executor.AddCommand(new Command("taskkill", "/f /im rm.host.exe"));
       Executor.Execute();

@@ -4,6 +4,7 @@ namespace TFSCliHelper
 {
   public interface ICommandBuilder
   {
-    public ICommandExecutor Executor { get; }
+    ICommandExecutor Executor { get; }
+    void Build(string arguments);
   }
 }
