@@ -42,7 +42,7 @@ namespace TFSCliHelper
       Executor = new TFSCommandExecutor();
     }
 
-    public void Build(string argument)
+    public void Build(string arguments)
     {
       GoToDirectory();
       BuildSau();
