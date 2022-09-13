@@ -20,6 +20,8 @@
           return new TaskHostBuilder();
         case string a when arg.ToLower().Contains("merge"):
           return new MergeBuilder();
+        case "help":
+          return new HelpBuilder();
         default:
           throw new InvalidCommandException("Command not implemented.");
       }
