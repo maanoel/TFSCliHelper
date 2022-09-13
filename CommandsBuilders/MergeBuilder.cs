@@ -112,11 +112,6 @@ namespace TFSCliHelper
       MergeSau();
     }
 
-    private void SetWorkSpace()
-    {
-      Executor.AddCommand(new Command($"{TFEXEPATH} ", @"workspaces /collection:http://tfs2015.totvs.com.br:8080/tfs/"));
-    }
-
     private void MergeFront()
     {
       if (_project.Equals("front"))
