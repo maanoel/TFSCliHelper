@@ -55,14 +55,6 @@ namespace TFSCliHelper
       Executor.AddCommand(new Command($"cd ", _msBuildDirectory));
     }
 
-    //private void BuildLib()
-    //{
-    //  foreach (var path in _pathSlnLib)
-    //  {
-    //    Executor.AddCommand(new Command($"msbuild ", path));
-    //  }
-    //}
-
     private void BuildSau()
     {
       foreach (var path in _pathSlnSau)
