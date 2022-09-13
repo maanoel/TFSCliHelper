@@ -11,7 +11,7 @@ namespace TFSCliHelper
     {
     }
 
-    public void Build(string command)
+    public void Build(string commands)
     {
       BreakLine();
       Console.Write(@"Examples of avalible commands: ");
@@ -35,7 +35,7 @@ namespace TFSCliHelper
       Console.Write("open rm.host.exe e.g open host 2209");
       BreakLine();
       WriteBlue("   merge version X ");
-      Console.Write("merge a changeset to all versions. Form this command with four parameters 'merge project version changeset' e.g merge back 32 81021");
+      Console.Write("merge a changeset to all versions. Form this command with four parameters 'merge project version changeset' e.g merge back 32 81021 ");
       Console.Write("Check in first in a version to use this command, the version used in version parameter is the versions of check in");
       BreakLine();
       BreakLine();
