@@ -65,7 +65,7 @@ namespace TFSCliHelper
 
     private void BuildPep()
     {
-      foreach (var path in _pathSlnSau)
+      foreach (var path in _pathSlnPep)
       {
         Executor.AddCommand(new Command($"msbuild ", path));
       }
