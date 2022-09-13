@@ -107,7 +107,6 @@ namespace TFSCliHelper
 
     private void GetVersionFiles()
     {
-      SetWorkSpace();
       MergeFront();
       MergeBack();
       MergeSau();
@@ -115,7 +114,7 @@ namespace TFSCliHelper
 
     private void SetWorkSpace()
     {
-      Executor.AddCommand(new Command($"{TFEXEPATH}", @"workspaces / collection:http://tfs2015.totvs.com.br\CD-BH"));
+      Executor.AddCommand(new Command($"{TFEXEPATH} ", @"workspaces /collection:http://tfs2015.totvs.com.br:8080/tfs/"));
     }
 
     private void MergeFront()
@@ -126,7 +125,6 @@ namespace TFSCliHelper
         {
           if (version.Equals(_pathFrontTfs)) continue;
 
-          Executor.AddCommand(new Command($"{TFEXEPATH} merge /candidate ", _pathFrontTfs + " " + version + " " + _recursive));
           Executor.AddCommand(new Command($"{TFEXEPATH} merge /baseless /version:{_changeSet}", _pathFrontTfs + " " + version + " " + _recursive));
         }
       }
@@ -140,8 +138,8 @@ namespace TFSCliHelper
         {
           if (version.Equals(_pathBackTfs)) continue;
 
-          Executor.AddCommand(new Command($"{TFEXEPATH} merge /candidate", _pathBackTfs + " " + version + " " + _recursive));
-          Executor.AddCommand(new Command($"{TFEXEPATH} merge /baseless /version:{_changeSet}", _pathBackTfs + " " + version + " " + _recursive));
+          Executor.AddCommand(new Command($"cd", @"C:\RM"));
+          Executor.AddCommand(new Command($"{TFEXEPATH} merge /baseless /version:{_changeSet}~{_changeSet}", _pathBackTfs + " " + version + " " + _recursive));
         }
       }
     }
@@ -154,7 +152,6 @@ namespace TFSCliHelper
         {
           if (version.Equals(_pathSauTfs)) continue;
 
-          Executor.AddCommand(new Command($"{TFEXEPATH} merge /candidate", _pathSauTfs + " " + version + " " + _recursive));
           Executor.AddCommand(new Command($"{TFEXEPATH} merge /baseless /version:{_changeSet}", _pathSauTfs + " " + version + " " + _recursive));
         }
       }
