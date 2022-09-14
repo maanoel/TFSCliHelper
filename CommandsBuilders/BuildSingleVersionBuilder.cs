@@ -8,19 +8,27 @@ namespace PEPCliHelper
     private string _msBuildDirectory = @"C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\MSBuild\Current\Bin";
     private string _pathBack;
     private string _pathSau;
+    private ICommandBuilder _taskHostBuilder;
 
     public BuildSingleVersionBuilder()
     {
       Executor = new TFSCommandExecutor();
+      _taskHostBuilder = new TaskHostBuilder();
     }
 
     public void Build(string argument)
     {
+      KillHost();
       PrepareCommand(argument);
       GoToDirectory();
       BuildSau();
       BuildPep();
       ExecuteCommands();
+    }
+
+    private void KillHost()
+    {
+      _taskHostBuilder.Build("");
     }
 
     private void PrepareCommand(string argument)
