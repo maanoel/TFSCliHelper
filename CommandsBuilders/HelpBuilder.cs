@@ -31,6 +31,9 @@ namespace PEPCliHelper
       WriteBlue("   kill host ");
       Console.Write("kill rm.host.exe that is running.");
       BreakLine();
+      WriteBlue("   delete broker");
+      Console.Write(" delete broker on a specified version e.g delete broker 32 or delete broker atual");
+      BreakLine();
       WriteBlue("   open host X ");
       Console.Write("open rm.host.exe e.g open host 2209");
       BreakLine();
