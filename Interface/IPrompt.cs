@@ -1,4 +1,4 @@
-﻿namespace TFSCliHelper
+﻿namespace PEPCliHelper
 {
   public interface IPrompt
   {

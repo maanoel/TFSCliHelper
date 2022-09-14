@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace TFSCliHelper
+namespace PEPCliHelper
 {
   public class Command: ICommand
   {

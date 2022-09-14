@@ -4,6 +4,8 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net5.0</TargetFramework>
     <ApplicationIcon>Kyo-Tux-Aeon-Apps-Command.ico</ApplicationIcon>
+    <AssemblyName>PEPCliHelper</AssemblyName>
+    <RootNamespace>PEPCliHelper</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

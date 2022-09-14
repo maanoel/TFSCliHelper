@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Text;
 
-namespace TFSCliHelper
+namespace PEPCliHelper
 {
   public class CMDWindows : IPrompt
   {

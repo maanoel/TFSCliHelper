@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace TFSCliHelper
+namespace PEPCliHelper
 {
   public class TFSCommandExecutor : ICommandExecutor
   {
