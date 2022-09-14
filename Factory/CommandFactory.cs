@@ -22,6 +22,8 @@
           return new MergeBuilder();
         case "help":
           return new HelpBuilder();
+        case string a when arg.ToLower().Contains("delete broker"):
+          return new DeleteBrokerBuilder();
         default:
           throw new InvalidCommandException("Command not implemented.");
       }
