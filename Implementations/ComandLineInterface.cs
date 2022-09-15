@@ -11,8 +11,8 @@
 
     public ICommandLineInterface WaitCommand()
     {
-      System.Console.WriteLine("Please type the command you want to execute...");
-      System.Console.WriteLine("You can type help to see avalible commands.");
+      System.Console.WriteLine("Digite help para ver a lista de comandos disponíveis");
+      System.Console.WriteLine("Digite o comando que você deseja executar...");
 
       _arg = System.Console.ReadLine();
       return this;

@@ -14,32 +14,32 @@ namespace PEPCliHelper
     public void Build(string commands)
     {
       BreakLine();
-      Console.Write(@"Examples of avalible commands: ");
+      Console.Write(@"Exemplos dos comandos disponíveis: ");
       BreakLine();
       WriteBlue("   get all ");
-      Console.Write("build Sau-PEP, Sau-Saude and FrameHTML on all versions");
+      Console.Write("Realiza o get do Sau-PEP, Sau-Saude e FrameHTML em todas as versões. Ex: get all");
       BreakLine();
       WriteBlue("   get version X ");
-      Console.Write("get Sau-PEP, Sau-Saude and FrameHTML on specified version e.g. get version 2302");
+      Console.Write("Realiza o get do Sau-PEP, Sau-Saude e FrameHTML na versão especificada. Ex: get version 2302");
       BreakLine();
       WriteBlue("   build all ");
-      Console.Write("build Sau-PEP and Sau-Saude on all versions.");
+      Console.Write("Realiza o build do Sau-PEP e Sau-Saude em todas as versões. Ex: build all");
       BreakLine();
       WriteBlue("   build version X ");
-      Console.Write("build Sau-PEP and Sau-Saude on specified version e.g. build version 2209");
+      Console.Write("Realiza o build do Sau-PEP e Sau-Saude na versão especificada Ex: build version 2209");
       BreakLine();
       WriteBlue("   kill host ");
-      Console.Write("kill rm.host.exe that is running.");
+      Console.Write("Mata o rm.host.exe.");
       BreakLine();
       WriteBlue("   delete broker");
-      Console.Write(" delete broker on a specified version e.g delete broker 32 or delete broker atual");
+      Console.Write(" Remove o arquivo _broker na versão especificada Ex: delete broker 32");
       BreakLine();
       WriteBlue("   open host X ");
-      Console.Write("open rm.host.exe e.g open host 2209");
+      Console.Write("Abre rm.host.exe da versão especificada Ex: open host 2209");
       BreakLine();
       WriteBlue("   merge version X ");
-      Console.Write("merge a changeset to all versions. Form this command with four parameters 'merge project version changeset' e.g merge back 32 81021 ");
-      Console.Write("Check in first in a version to use this command, the version used in version parameter is the versions of check in");
+      Console.Write("Realiza o merge de um changeset para todas as versões. Comando formado por 4 parâmetros. Ex: 'merge project version changeset' - merge back 32 81021 ");
+      Console.Write("Realize o check in em algum versão para obter um changeset antes de usar este comando.");
       BreakLine();
       BreakLine();
     }
