@@ -13,7 +13,7 @@ Executar utilizando o PEPCliHelper disponibilizado no driver.
 
 ### 🔩 Exemplos de comandos
 
-*Para as versões antigas que não seguem o commit semântico, utilizar apenas os dos últimos dígitos no comando. Ex: '12.1.32', fica apenas '32'.
+Para as versões antigas que não seguem o commit semântico, utilizar apenas os dos últimos dígitos no comando. Ex: '12.1.32', fica apenas '32'.
 
 get all - Realiza o get no tfs dos projetos Sau-PEP, Sau-Saude e FrameHTML em todas as versões utilizadas pela equipe.
 
@@ -47,10 +47,10 @@ build version 2209
 
 merge projeto numero_versao numero_changeset - Realiza o merge de um changeset da versão para todas as outras
 
-*Comando só pode ser utilizado após o primeiro check in já ter sido realizado
-*O changeset do check in precisa ser passado como argumento
-*O check in será replicado para todas as outras versões
-*O argumento projeto possui os valores de: back, front e sau
+Comando só pode ser utilizado após o primeiro check in já ter sido realizado
+O changeset do check in precisa ser passado como argumento
+O check in será replicado para todas as outras versões
+O argumento projeto possui os valores de: back, front e sau
 
 ```
 merge back 32 861487
