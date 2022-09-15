@@ -32,7 +32,6 @@ namespace PEPCliHelper
         StructTFSServerPathFront._34,
         StructTFSServerPathFront._2205,
         StructTFSServerPathFront._2209,
-        StructTFSServerPathFront._2209,
         StructTFSServerPathFront.atual,
 
       };
