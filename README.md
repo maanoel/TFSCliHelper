@@ -47,10 +47,10 @@ build version 2209
 
 merge projeto numero_versao numero_changeset - Realiza o merge de um changeset da versão para todas as outras
 
-Comando só pode ser utilizado após o primeiro check in já ter sido realizado
-O changeset do check in precisa ser passado como argumento
-O check in será replicado para todas as outras versões
-O argumento projeto possui os valores de: back, front e sau
+º Comando só pode ser utilizado após o primeiro check in já ter sido realizado
+º O changeset do check in precisa ser passado como argumento
+º O check in será replicado para todas as outras versões
+º O argumento projeto possui os valores de: back, front e sau
 
 ```
 merge back 32 861487
