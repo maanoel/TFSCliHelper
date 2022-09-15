@@ -22,7 +22,7 @@
       openHost.AnotherCommand = killHost;
       killHost.AnotherCommand = merge;
       merge.AnotherCommand = deleteBroker;
-      merge.AnotherCommand = help;
+      deleteBroker.AnotherCommand = help;
       help.AnotherCommand = notImplemented;
 
       getAll.Execute(arguments);
