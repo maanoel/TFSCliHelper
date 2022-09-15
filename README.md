@@ -50,13 +50,13 @@ build version 2209
 
 Comando só pode ser utilizado após o primeiro check in já ter sido realizado
 
+Realize o get all ou o get versio antes de executar este comando
+
 O changeset do check in precisa ser passado como argumento
 
 O check in será replicado para todas as outras versões
 
 O argumento projeto possui os valores de: back, front e sau
-
-Antes de realizar o merge é feito o get nos fontes
 
 ```
 merge back 32 861487
