@@ -22,8 +22,7 @@
     {
       try
       {
-        ICommandBuilder command = CommandFactory.Create(_arg);
-        command.Build(_arg);
+        new ChainOfCommands().SendCommand(_arg);
       }
       catch (InvalidCommandException ex)
       {
