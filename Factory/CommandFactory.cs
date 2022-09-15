@@ -4,6 +4,7 @@
   {
     public static ICommandBuilder Create(string arg)
     {
+      //TODO: coloca em uma corrente (Chain of responsability)
       switch (arg.ToLower())
       {
         case "get all":
