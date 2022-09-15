@@ -5,6 +5,7 @@ Command line tool com comandos utilizados diariamente pela equipe do PEP RM
 ### 📋 Pré-requisitos
 
 Sdk do .NET framework instalado
+
 Utilizar o mapeamento padrão C:\RM\legado\... e C:\RM\atual\release\...
 
 ### 🔧 Execução
