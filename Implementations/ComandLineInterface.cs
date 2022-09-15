@@ -22,7 +22,7 @@
     {
       try
       {
-        new ChainOfCommands().SendCommand(_arg);
+        new ChainOfCommands().SendCommand(_arg.ToLower());
       }
       catch (InvalidCommandException ex)
       {
