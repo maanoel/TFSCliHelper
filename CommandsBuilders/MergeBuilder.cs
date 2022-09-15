@@ -51,8 +51,6 @@ namespace PEPCliHelper
         StructTFSServerPathSau._2209,
         StructTFSServerPathSau.atual,
       };
-
-      _commandGetAllVersion = new GetAllVersionsBuilder();
     }
 
     public void Build(string command)
