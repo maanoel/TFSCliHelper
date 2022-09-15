@@ -16,8 +16,6 @@ namespace PEPCliHelper
     private List<string> _pathsFront;
     private List<string> _pathsBack;
     private List<string> _pathsSau;
-    private ICommandBuilder _commandGetAllVersion;
-
 
     public ICommandExecutor Executor { get; private set; }
 
@@ -59,15 +57,9 @@ namespace PEPCliHelper
 
     public void Build(string command)
     {
-      GetAllVersions();
       PrepareCommand(command);
       GetVersionFiles();
       ExecuteCommands();
-    }
-
-    private void GetAllVersions()
-    {
-      _commandGetAllVersion.Build("");
     }
 
     private void PrepareCommand(string command)
