@@ -55,6 +55,8 @@ O check in será replicado para todas as outras versões
 
 O argumento projeto possui os valores de: back, front e sau
 
+Antes de realizar o merge é feito o get nos fontes
+
 ```
 merge back 32 861487
 ```
