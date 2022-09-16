@@ -6,7 +6,7 @@
 
     public void Execute(string arguments)
     {
-      if (arguments.Equals("delete broker"))
+      if (arguments.Contains("delete broker"))
       {
         new DeleteBrokerBuilder().Build(arguments);
         return;
