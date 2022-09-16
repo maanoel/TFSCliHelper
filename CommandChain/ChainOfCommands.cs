@@ -14,6 +14,8 @@
       var deleteBroker = new DeleteBroker();
       var help = new Help();
       var openRm = new OpenRm();
+      var killAll = new KillAll();
+      var cmd = new Cmd();
       var notImplemented = new NotImplemented();
 
       getAll.AnotherCommand = getVersion;
@@ -25,7 +27,9 @@
       merge.AnotherCommand = deleteBroker;
       deleteBroker.AnotherCommand = help;
       help.AnotherCommand = openRm;
-      openRm.AnotherCommand = notImplemented;
+      openRm.AnotherCommand = killAll;
+      killAll.AnotherCommand = cmd;
+      cmd.AnotherCommand = notImplemented;
 
       getAll.Execute(arguments);
     }

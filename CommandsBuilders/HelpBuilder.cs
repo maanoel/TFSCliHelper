@@ -11,10 +11,10 @@ namespace PEPCliHelper
     {
     }
 
-    public void Build(string commands)
+    public void Build(string arguments)
     {
       BreakLine();
-      Console.Write(@"Exemplos dos comandos disponíveis: ");
+      Console.Write(@"Exemplos dos comandos disponíveis - Para mais detalhes vide README");
       BreakLine();
       WriteBlue("   get all ");
       Console.Write("Realiza o get do Sau-PEP, Sau-Saude e FrameHTML em todas as versões. Ex: get all");
@@ -26,20 +26,27 @@ namespace PEPCliHelper
       Console.Write("Realiza o build do Sau-PEP e Sau-Saude em todas as versões. Ex: build all");
       BreakLine();
       WriteBlue("   build version X ");
-      Console.Write("Realiza o build do Sau-PEP e Sau-Saude na versão especificada Ex: build version 2209");
+      Console.Write("Realiza o build do Sau-PEP e Sau-Saude na versão especificada. Ex: build version 2209");
       BreakLine();
+      WriteBlue("   merge version X ");
+      Console.Write("Realiza o merge de um changeset para todas as versões. Comando formado por 4 parâmetros. Ex: 'merge project version changeset' = merge back 32 81021 ");
       WriteBlue("   kill host ");
       Console.Write("Mata o rm.host.exe.");
+      BreakLine();
+      WriteBlue("   kill all ");
+      Console.Write("Mata todas as instância iniciadas com RM. Inclui o RM.host.exe, RM.host.service e o RM.exe ");
       BreakLine();
       WriteBlue("   delete broker");
       Console.Write(" Remove o arquivo _broker na versão especificada Ex: delete broker 32");
       BreakLine();
       WriteBlue("   open host X ");
-      Console.Write("Abre rm.host.exe da versão especificada Ex: open host 2209");
+      Console.Write("Abre rm.host.exe da versão especificada. Ex: open host 2209");
       BreakLine();
-      WriteBlue("   merge version X ");
-      Console.Write("Realiza o merge de um changeset para todas as versões. Comando formado por 4 parâmetros. Ex: 'merge project version changeset' - merge back 32 81021 ");
-      Console.Write("Realize o check in em algum versão para obter um changeset antes de usar este comando.");
+      WriteBlue("   open rm X ");
+      Console.Write("Abre rm.exe da versão especificada. Ex: open rm atual");
+      BreakLine();
+      WriteBlue("   cmd command ");
+      Console.Write("Executa um comando no CMD utilizando o PEPCli. Ex: cmd systeminfo");
       BreakLine();
       BreakLine();
     }
