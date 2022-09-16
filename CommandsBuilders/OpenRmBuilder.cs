@@ -1,13 +1,13 @@
 ﻿namespace PEPCliHelper
 {
-  public class OpenHostBuilder : ICommandBuilder
+  public class OpenRmBuilder : ICommandBuilder
   {
     private string _path;
-    private readonly string _hostName = "rm.host.exe";
+    private readonly string _rmName = "rm.exe";
 
     public ICommandExecutor Executor { get; private set; }
 
-    public OpenHostBuilder()
+    public OpenRmBuilder()
     {
       Executor = new TFSCommandExecutor();
     }
@@ -15,7 +15,7 @@
     public void Build(string arguments)
     {
       PrepareCommand(arguments);
-      Executor.AddCommand(new Command($"{_path}/{_hostName}"));
+      Executor.AddCommand(new Command($"{_path}/{_rmName}"));
       Executor.Execute();
     }
 

@@ -13,6 +13,7 @@
       var merge = new Merge();
       var deleteBroker = new DeleteBroker();
       var help = new Help();
+      var openRm = new OpenRm();
       var notImplemented = new NotImplemented();
 
       getAll.AnotherCommand = getVersion;
@@ -23,7 +24,8 @@
       killHost.AnotherCommand = merge;
       merge.AnotherCommand = deleteBroker;
       deleteBroker.AnotherCommand = help;
-      help.AnotherCommand = notImplemented;
+      help.AnotherCommand = openRm;
+      openRm.AnotherCommand = notImplemented;
 
       getAll.Execute(arguments);
     }
