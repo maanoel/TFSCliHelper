@@ -46,7 +46,10 @@ namespace PEPCliHelper
       Console.Write("Abre rm.exe da versão especificada. Ex: open rm atual");
       BreakLine();
       WriteBlue("   cmd command ");
-      Console.Write("Executa um comando no CMD utilizando o PEPCli. Ex: cmd systeminfo");
+      Console.Write("Executa um comando no CMD utilizando o PEPCli Ex: cmd systeminfo");
+      BreakLine();
+      WriteBlue("   clear ");
+      Console.Write("Limpa o PEPCli Ex: clear ou cls");
       BreakLine();
       BreakLine();
     }

@@ -16,6 +16,7 @@
       var openRm = new OpenRm();
       var killAll = new KillAll();
       var cmd = new Cmd();
+      var clear = new Clear();
       var notImplemented = new NotImplemented();
 
       getAll.AnotherCommand = getVersion;
@@ -29,7 +30,8 @@
       help.AnotherCommand = openRm;
       openRm.AnotherCommand = killAll;
       killAll.AnotherCommand = cmd;
-      cmd.AnotherCommand = notImplemented;
+      cmd.AnotherCommand = clear;
+      clear.AnotherCommand = notImplemented;
 
       getAll.Execute(arguments);
     }
