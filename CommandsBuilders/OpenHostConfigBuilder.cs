@@ -1,13 +1,13 @@
 ﻿namespace PEPCliHelper
 {
-  public class OpenHostBuilder : ICommandBuilder
+  public class OpenHostConfigBuilder : ICommandBuilder
   {
     private string _path;
-    private readonly string _hostName = "rm.host.exe";
+    private readonly string _aliasName = "rm.host.exe.config";
 
     public ICommandExecutor Executor { get; private set; }
 
-    public OpenHostBuilder()
+    public OpenHostConfigBuilder()
     {
       Executor = new TFSCommandExecutor();
     }
@@ -15,13 +15,13 @@
     public void Build(string arguments)
     {
       PrepareCommand(arguments);
-      Executor.AddCommand(new Command($"{_path}/{_hostName}"));
+      Executor.AddCommand(new Command("start", $"notepad++ {_path}/{_aliasName}"));
       Executor.Execute();
     }
 
     private void PrepareCommand(string argument)
     {
-      _path = StructVersionsBin.GetPath(argument);
+      _path =  StructVersionsBin.GetPath(argument);
     }
   }
 }

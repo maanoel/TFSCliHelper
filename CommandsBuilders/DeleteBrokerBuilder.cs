@@ -20,29 +20,7 @@
 
     private void PrepareCommand(string argument)
     {
-      switch (argument)
-      {
-        case string a when argument.EndsWith("32"):
-          _pathBin = StructVersionsBin._32;
-          break;
-        case string a when argument.EndsWith("33"):
-          _pathBin = StructVersionsBin._33;
-          break;
-        case string a when argument.EndsWith("34"):
-          _pathBin = StructVersionsBin._34;
-          break;
-        case string a when argument.EndsWith("2205"):
-          _pathBin = StructVersionsBin._2205;
-          break;
-        case string a when argument.EndsWith("2209"):
-          _pathBin = StructVersionsBin._2209;
-          break;
-        case string a when argument.EndsWith("atual"):
-          _pathBin = StructVersionsBin.atual;
-          break;
-        default:
-          throw new InvalidCommandException("Command not implemented.");
-      }
+      _pathBin = StructVersionsBin.GetPath(argument);
     }
   }
 }
