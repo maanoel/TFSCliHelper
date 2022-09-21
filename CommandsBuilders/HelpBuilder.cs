@@ -51,6 +51,9 @@ namespace PEPCliHelper
       WriteBlue("   clear ");
       Console.Write("Limpa o PEPCli Ex: clear ou cls");
       BreakLine();
+      WriteBlue("   open alias X ");
+      Console.Write("Abre o arquivo alias.dat da versão especificada no notepad++. Ex: open alias atual");
+      BreakLine();
       BreakLine();
     }
 

@@ -17,6 +17,7 @@
       var killAll = new KillAll();
       var cmd = new Cmd();
       var clear = new Clear();
+      var openAlias = new OpenAlias();
       var notImplemented = new NotImplemented();
 
       getAll.AnotherCommand = getVersion;
@@ -31,7 +32,8 @@
       openRm.AnotherCommand = killAll;
       killAll.AnotherCommand = cmd;
       cmd.AnotherCommand = clear;
-      clear.AnotherCommand = notImplemented;
+      clear.AnotherCommand = openAlias;
+      openAlias.AnotherCommand = notImplemented;
 
       getAll.Execute(arguments);
     }
