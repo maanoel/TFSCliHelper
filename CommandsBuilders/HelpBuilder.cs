@@ -30,6 +30,7 @@ namespace PEPCliHelper
       BreakLine();
       WriteBlue("   merge version X ");
       Console.Write("Realiza o merge de um changeset para todas as versões. Comando formado por 4 parâmetros. Ex: 'merge project version changeset' = merge back 32 81021 ");
+      BreakLine();
       WriteBlue("   kill host ");
       Console.Write("Mata o rm.host.exe.");
       BreakLine();
@@ -53,6 +54,9 @@ namespace PEPCliHelper
       BreakLine();
       WriteBlue("   open alias X ");
       Console.Write("Abre o arquivo alias.dat da versão especificada no notepad++. Ex: open alias atual");
+      BreakLine();
+      WriteBlue("   open hostconfig X ");
+      Console.Write("Abre o arquivo rm.host.exe.config da versão especificada no notepad++. Ex: open hostconfig 2209");
       BreakLine();
       BreakLine();
     }
