@@ -3,10 +3,10 @@ using System.Collections.Generic;
 
 namespace PEPCliHelper
 {
-  public class TFSCommandExecutor : ICommandExecutor
+  public class TfsCommandExecutor : ICommandExecutor
   {
 
-    public TFSCommandExecutor()
+    public TfsCommandExecutor()
     {
       Commands = new List<ICommand>();
       Prompt = new CMDWindows();

@@ -12,7 +12,7 @@ namespace PEPCliHelper
 
     public BuildSingleVersionBuilder()
     {
-      Executor = new TFSCommandExecutor();
+      Executor = new TfsCommandExecutor();
       _taskHostBuilder = new TaskHostBuilder();
     }
 

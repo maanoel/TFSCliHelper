@@ -6,7 +6,7 @@
 
     public CmdBuilder()
     {
-      Executor = new TFSCommandExecutor();
+      Executor = new TfsCommandExecutor();
     }
 
     public void Build(string arguments)

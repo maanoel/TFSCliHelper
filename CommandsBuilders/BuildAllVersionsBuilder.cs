@@ -40,7 +40,7 @@ namespace PEPCliHelper
         StructPepSlnPath.atual,
       };
 
-      Executor = new TFSCommandExecutor();
+      Executor = new TfsCommandExecutor();
       _taskHostBuilder = new TaskHostBuilder();
     }
 

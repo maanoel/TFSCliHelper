@@ -21,7 +21,7 @@ namespace PEPCliHelper
 
     public MergeBuilder()
     {
-      Executor = new TFSCommandExecutor();
+      Executor = new TfsCommandExecutor();
 
       _pathsFront = new List<string> {
         StructTFSServerPathFront._32,
