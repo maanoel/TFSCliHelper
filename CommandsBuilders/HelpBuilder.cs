@@ -46,17 +46,20 @@ namespace PEPCliHelper
       WriteBlue("   open rm X ");
       Console.Write("Abre rm.exe da versão especificada. Ex: open rm atual");
       BreakLine();
-      WriteBlue("   cmd command ");
-      Console.Write("Executa um comando no CMD utilizando o PEPCli Ex: cmd systeminfo");
-      BreakLine();
-      WriteBlue("   clear ");
-      Console.Write("Limpa o PEPCli Ex: clear ou cls");
-      BreakLine();
       WriteBlue("   open alias X ");
       Console.Write("Abre o arquivo alias.dat da versão especificada no notepad++. Ex: open alias atual");
       BreakLine();
       WriteBlue("   open hostconfig X ");
       Console.Write("Abre o arquivo rm.host.exe.config da versão especificada no notepad++. Ex: open hostconfig 2209");
+      BreakLine();
+      WriteBlue("   open front X ");
+      Console.Write("Abre o projeto do front do PEPRM no visual studio code da versão especificada. Ex: open front atual");
+      BreakLine();
+      WriteBlue("   cmd command ");
+      Console.Write("Executa um comando no CMD utilizando o PEPCli Ex: cmd systeminfo");
+      BreakLine();
+      WriteBlue("   clear ");
+      Console.Write("Limpa o PEPCli Ex: clear ou cls");
       BreakLine();
       BreakLine();
     }
