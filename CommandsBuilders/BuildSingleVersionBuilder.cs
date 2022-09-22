@@ -33,35 +33,8 @@ namespace PEPCliHelper
 
     private void PrepareCommand(string argument)
     {
-      switch (argument)
-      {
-        case string a when argument.EndsWith("32"):
-          _pathBack = StructPepSlnPath._32;
-          _pathSau = StructSauSlnPath._32;
-          break;
-        case string a when argument.EndsWith("33"):
-          _pathBack = StructPepSlnPath._33;
-          _pathSau = StructSauSlnPath._33;
-          break;
-        case string a when argument.EndsWith("34"):
-          _pathBack = StructPepSlnPath._34;
-          _pathSau = StructSauSlnPath._34;
-          break;
-        case string a when argument.EndsWith("2205"):
-          _pathBack = StructPepSlnPath._2205;
-          _pathSau = StructSauSlnPath._2205;
-          break;
-        case string a when argument.EndsWith("2209"):
-          _pathBack = StructPepSlnPath._2209;
-          _pathSau = StructSauSlnPath._2209;
-          break;
-        case string a when argument.EndsWith("atual"):
-          _pathBack = StructPepSlnPath.atual;
-          _pathSau = StructSauSlnPath.atual;
-          break;
-        default:
-          throw new InvalidCommandException("Command not implemented.");
-      }
+      _pathBack = StructPepSlnPath.GetVersion(argument);
+      _pathSau = StructSauSlnPath.GetVersion(argument);
     }
 
     private void GoToDirectory()
