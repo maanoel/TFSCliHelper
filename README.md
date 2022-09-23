@@ -4,7 +4,9 @@ Command line tool com comandos utilizados diariamente pela equipe do PEP RM
 
 ### 📋 Pré-requisitos
 
-Sdk do .NET framework instalado
+Sdk do .NET a partir da 5.0
+
+https://dotnet.microsoft.com/en-us/download/dotnet/5.0
 
 Utilizar o mapeamento padrão C:\RM\legado\... e C:\RM\atual\release\...
 
