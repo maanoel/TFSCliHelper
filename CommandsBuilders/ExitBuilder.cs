@@ -1,4 +1,6 @@
-﻿namespace PEPCliHelper
+﻿using System;
+
+namespace PEPCliHelper
 {
   public class ExitBuilder : ICommandBuilder
   {
@@ -13,6 +15,7 @@
     {
       Executor.AddCommand(new Command("exit"));
       Executor.Execute();
+      Environment.Exit(0);
     }
   }
 }
