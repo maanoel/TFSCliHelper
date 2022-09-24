@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace PEPCliHelper
+﻿namespace PEPCliHelper
 {
   public class BuildSingleVersionBuilder : ICommandBuilder
   {
