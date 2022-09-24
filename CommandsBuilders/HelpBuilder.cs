@@ -61,6 +61,9 @@ namespace PEPCliHelper
       WriteBlue("   clear ");
       Console.Write("Limpa o PEPCli Ex: clear ou cls");
       BreakLine();
+      WriteBlue("   exit ");
+      Console.Write("Fecha o PEPCli.");
+      BreakLine();
       BreakLine();
     }
 
