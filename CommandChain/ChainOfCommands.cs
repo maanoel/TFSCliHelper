@@ -20,6 +20,7 @@
       var openAlias = new OpenAlias();
       var openHost = new OpenHost();
       var openFront = new OpenFront();
+      var exit = new Exit();
       var notImplemented = new NotImplemented();
 
       getAll.AnotherCommand = getVersion;
@@ -37,7 +38,8 @@
       clear.AnotherCommand = openAlias;
       openAlias.AnotherCommand = openHost;
       openHost.AnotherCommand = openFront;
-      openFront.AnotherCommand = notImplemented;
+      openFront.AnotherCommand = exit;
+      exit.AnotherCommand = notImplemented;
 
       getAll.Execute(arguments);
     }
