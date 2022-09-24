@@ -14,7 +14,8 @@ namespace PEPCliHelper
 
     public static List<string> GetAllVersions()
     {
-      return new List<string>{_32,
+      return new List<string>{
+        _32,
         _33,
         _34,
         _2205,

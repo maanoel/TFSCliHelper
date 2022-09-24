@@ -17,60 +17,12 @@ namespace PEPCliHelper
 
     public GetAllVersionsBuilder()
     {
-      _versionsFront = new List<string> {
-        StructVersionsFront._32,
-        StructVersionsFront._33,
-        StructVersionsFront._34,
-        StructVersionsFront._2205,
-        StructVersionsFront._2209,
-        StructVersionsFront.atual
-      };
-
-      _pathFront = new List<string> {
-        StructTFSServerPathFront._32,
-        StructTFSServerPathFront._33,
-        StructTFSServerPathFront._34,
-        StructTFSServerPathFront._2205,
-        StructTFSServerPathFront._2209,
-        StructTFSServerPathFront.atual,
-
-      };
-
-      _versionsBack = new List<string> {
-        StructVersionsBack._32,
-        StructVersionsBack._33,
-        StructVersionsBack._34,
-        StructVersionsBack._2205,
-        StructVersionsBack._2209,
-        StructVersionsBack.atual,
-      };
-
-      _pathBack = new List<string> {
-        StructTFSServerPathBack._32,
-        StructTFSServerPathBack._33,
-        StructTFSServerPathBack._34,
-        StructTFSServerPathBack._2205,
-        StructTFSServerPathBack._2209,
-        StructTFSServerPathBack.atual,
-      };
-
-      _versionsSau = new List<string> {
-        StructVersionsSau._32,
-        StructVersionsSau._33,
-        StructVersionsSau._34,
-        StructVersionsSau._2205,
-        StructVersionsSau._2209,
-        StructVersionsSau.atual,
-      };
-
-      _pathSau = new List<string> {
-        StructTFSServerPathSau._32,
-        StructTFSServerPathSau._33,
-        StructTFSServerPathSau._34,
-        StructTFSServerPathSau._2205,
-        StructTFSServerPathSau._2209,
-        StructTFSServerPathSau.atual,
-      };
+      _versionsFront = StructVersionsFront.GetAllVersions();
+      _pathFront = StructTfsServerPathFront.GetAllVersions();
+      _versionsBack = StructVersionsBack.GetAllVersions();
+      _pathBack = StructTfsServerPathBack.GetAllVersions();
+      _versionsSau = StructVersionsSau.GetAllVersions();
+      _pathSau = StructTfsServerPathSau.GetAllVersions();
 
       Executor = new TfsCommandExecutor();
     }
