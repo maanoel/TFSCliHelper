@@ -7,14 +7,14 @@ namespace PEPCliHelper
     public ICommandExecutor Executor { get; private set; }
     private readonly List<string> _pathSlnSau;
     private readonly List<string> _pathSlnPep;
-    private string _msBuildDirectory = @"C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\MSBuild\Current\Bin";
-    private ICommandBuilder _taskHostBuilder;
+    private readonly string _msBuildDirectory = @"C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\MSBuild\Current\Bin";
+    private readonly ICommandBuilder _taskHostBuilder;
 
     public BuildAllVersionsBuilder()
     {
+      Executor = new TfsCommandExecutor();
       _pathSlnSau = StructSauSlnPath.GetAllVersions();
       _pathSlnPep = StructPepSlnPath.GetAllVersions();
-      Executor = new TfsCommandExecutor();
       _taskHostBuilder = new TaskHostBuilder();
     }
 

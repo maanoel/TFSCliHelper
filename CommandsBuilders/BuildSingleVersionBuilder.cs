@@ -3,10 +3,10 @@
   public class BuildSingleVersionBuilder : ICommandBuilder
   {
     public ICommandExecutor Executor { get; private set; }
-    private string _msBuildDirectory = @"C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\MSBuild\Current\Bin";
+    private readonly string _msBuildDirectory = @"C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\MSBuild\Current\Bin";
+    private readonly ICommandBuilder _taskHostBuilder;
     private string _pathBack;
     private string _pathSau;
-    private ICommandBuilder _taskHostBuilder;
 
     public BuildSingleVersionBuilder()
     {
@@ -14,10 +14,10 @@
       _taskHostBuilder = new TaskHostBuilder();
     }
 
-    public void Build(string argument)
+    public void Build(string arguments)
     {
       KillHost();
-      PrepareCommand(argument);
+      PrepareCommand(arguments);
       GoToDirectory();
       BuildSau();
       BuildPep();
