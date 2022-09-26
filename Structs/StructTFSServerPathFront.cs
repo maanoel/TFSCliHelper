@@ -40,7 +40,6 @@ namespace PEPCliHelper
         _34,
         _2205,
         _2209,
-        _2209,
         atual,
       };
     }
