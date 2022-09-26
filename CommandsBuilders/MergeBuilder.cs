@@ -23,7 +23,7 @@ namespace PEPCliHelper
       Executor = new TfsCommandExecutor();
       _pathsFront = StructTfsServerPathFront.GetAllVersions(); 
       _pathsBack = StructTfsServerPathBack.GetAllVersions();
-      _pathsSau = StructTfsServerPathSau.getAllVersions();
+      _pathsSau = StructTfsServerPathSau.GetAllVersions();
     }
 
     public void Build(string arguments)
