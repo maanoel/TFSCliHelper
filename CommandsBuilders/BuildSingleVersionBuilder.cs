@@ -31,8 +31,8 @@
 
     private void PrepareCommand(string argument)
     {
-      _pathBack = StructPepSlnPath.GetVersion(argument);
-      _pathSau = StructSauSlnPath.GetVersion(argument);
+      _pathBack = (new StructPepSlnPath() as IStructPath).GetVersion(argument);
+      _pathSau = (new StructSauSlnPath() as IStructPath).GetVersion(argument);
     }
 
     private void GoToDirectory()

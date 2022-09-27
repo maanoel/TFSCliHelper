@@ -13,8 +13,8 @@ namespace PEPCliHelper
     public BuildAllVersionsBuilder()
     {
       Executor = new TfsCommandExecutor();
-      _pathSlnSau = StructSauSlnPath.GetAllVersions();
-      _pathSlnPep = StructPepSlnPath.GetAllVersions();
+      _pathSlnSau = (new StructSauSlnPath() as IStructPath).GetAllVersions();
+      _pathSlnPep = (new StructPepSlnPath() as IStructPath).GetAllVersions();
       _taskHostBuilder = new TaskHostBuilder();
     }
 
