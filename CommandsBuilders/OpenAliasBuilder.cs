@@ -21,7 +21,7 @@
 
     private void PrepareCommand(string argument)
     {
-      _path = StructVersionsBin.GetPath(argument);
+      _path = (new StructVersionsBin() as IStructPath).GetVersion(argument);
     }
   }
 }

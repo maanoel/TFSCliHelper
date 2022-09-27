@@ -21,9 +21,9 @@ namespace PEPCliHelper
     public MergeBuilder()
     {
       Executor = new TfsCommandExecutor();
-      _pathsFront = StructTfsServerPathFront.GetAllVersions(); 
-      _pathsBack = StructTfsServerPathBack.GetAllVersions();
-      _pathsSau = StructTfsServerPathSau.GetAllVersions();
+      _pathsFront = (new StructTfsServerPathFront() as IStructPath).GetAllVersions(); 
+      _pathsBack = (new StructTfsServerPathBack() as IStructPath).GetAllVersions();
+      _pathsSau = (new StructTfsServerPathSau() as IStructPath).GetAllVersions();
     }
 
     public void Build(string arguments)
@@ -40,9 +40,9 @@ namespace PEPCliHelper
       _version = commandSplit[2];
       _project = commandSplit[1];
 
-      _pathFrontTfs = StructTfsServerPathFront.GetVersion(_version);
-      _pathBackTfs = StructTfsServerPathBack.GetVersion(_version);
-      _pathSauTfs = StructTfsServerPathSau.GetVersion(_version);
+      _pathFrontTfs = (new StructTfsServerPathFront() as IStructPath).GetVersion(_version);
+      _pathBackTfs = (new StructTfsServerPathBack() as IStructPath).GetVersion(_version);
+      _pathSauTfs = (new StructTfsServerPathSau() as IStructPath).GetVersion(_version);
     }
 
     private void GetVersionFiles()

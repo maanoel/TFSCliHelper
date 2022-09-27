@@ -17,12 +17,12 @@ namespace PEPCliHelper
 
     public GetAllVersionsBuilder()
     {
-      _versionsFront = StructVersionsFront.GetAllVersions();
-      _pathFront = StructTfsServerPathFront.GetAllVersions();
-      _versionsBack = StructVersionsBack.GetAllVersions();
-      _pathBack = StructTfsServerPathBack.GetAllVersions();
-      _versionsSau = StructVersionsSau.GetAllVersions();
-      _pathSau = StructTfsServerPathSau.GetAllVersions();
+      _versionsFront = (new StructVersionsFront() as IStructPath).GetAllVersions();
+      _pathFront = (new StructTfsServerPathFront() as IStructPath).GetAllVersions();
+      _versionsBack = (new StructVersionsBack() as IStructPath).GetAllVersions();
+      _pathBack = (new StructTfsServerPathBack() as IStructPath).GetAllVersions();
+      _versionsSau = (new StructVersionsSau() as IStructPath).GetAllVersions();
+      _pathSau = (new StructTfsServerPathSau() as IStructPath).GetAllVersions();
 
       Executor = new TfsCommandExecutor();
     }

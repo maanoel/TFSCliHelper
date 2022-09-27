@@ -27,12 +27,12 @@
 
     private void PrepareCommand(string command)
     {
-      _pathFrontFolder = StructVersionsFront.GetVersion(command);
-      _pathFrontTfs = StructTfsServerPathFront.GetVersion(command);
-      _pathBackFolder = StructVersionsBack.GetVersion(command);
-      _pathBackTfs = StructTfsServerPathBack.GetVersion(command);
-      _pathSauFolder = StructVersionsSau.GetVersion(command);
-      _pathSauTfs = StructTfsServerPathSau.GetVersion(command);
+      _pathFrontFolder = (new StructVersionsFront() as IStructPath).GetVersion(command);
+      _pathFrontTfs = (new StructTfsServerPathFront() as IStructPath).GetVersion(command);
+      _pathBackFolder = (new StructVersionsBack() as IStructPath).GetVersion(command);
+      _pathBackTfs = (new StructTfsServerPathBack() as IStructPath).GetVersion(command);
+      _pathSauFolder = (new StructVersionsSau() as IStructPath) .GetVersion(command);
+      _pathSauTfs = (new StructTfsServerPathSau() as IStructPath) .GetVersion(command);
     }
 
     private void GetVersionFiles()
