@@ -16,5 +16,4 @@
       AnotherCommand.Execute(arguments);
     }
   }
-
 }
