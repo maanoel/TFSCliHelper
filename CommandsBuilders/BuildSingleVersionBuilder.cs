@@ -3,7 +3,7 @@
   public class BuildSingleVersionBuilder : ICommandBuilder
   {
     public ICommandExecutor Executor { get; private set; }
-    private readonly string _msBuildDirectory = @"C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\MSBuild\Current\Bin";
+    private readonly string _msBuildDirectory = @"C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Current\Bin";
     private readonly ICommandBuilder _taskHostBuilder;
     private string _pathBack;
     private string _pathSau;

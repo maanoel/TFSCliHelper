@@ -7,7 +7,7 @@ namespace PEPCliHelper
     public ICommandExecutor Executor { get; private set; }
     private readonly List<string> _pathSlnSau;
     private readonly List<string> _pathSlnPep;
-    private readonly string _msBuildDirectory = @"C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\MSBuild\Current\Bin";
+    private readonly string _msBuildDirectory = @"C:\Program Files\Microsoft Visual Studio\2022\Professional\MSBuild\Current\Bin";
     private readonly ICommandBuilder _taskHostBuilder;
 
     public BuildAllVersionsBuilder()

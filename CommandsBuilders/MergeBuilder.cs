@@ -14,7 +14,7 @@ namespace PEPCliHelper
     private readonly List<string> _pathsFront;
     private readonly List<string> _pathsBack;
     private readonly List<string> _pathsSau;
-    private readonly string TFEXEPATH = @"""C:\Program Files (x86)\Microsoft Visual Studio\2019\Professional\Common7\IDE\CommonExtensions\Microsoft\TeamFoundation\Team Explorer\TF.exe""";
+    private readonly string TFEXEPATH = @"""C:\Program Files\Microsoft Visual Studio\2022\Professional\Common7\IDE\CommonExtensions\Microsoft\TeamFoundation\Team Explorer\TF.exe""";
 
     public ICommandExecutor Executor { get; private set; }
 
