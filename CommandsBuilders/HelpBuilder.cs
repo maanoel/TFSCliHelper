@@ -55,6 +55,9 @@ namespace PEPCliHelper
       WriteBlue("   open front X ");
       Console.Write("Abre o projeto do front do PEPRM no visual studio code da versão especificada. Ex: open front atual");
       BreakLine();
+      WriteBlue("   open podoc ");
+      Console.Write("Abre a documentação do po-ui na pagina inicial utilizando o google chrome");
+      BreakLine();
       WriteBlue("   cmd command ");
       Console.Write("Executa um comando no CMD utilizando o PEPCli Ex: cmd systeminfo");
       BreakLine();
