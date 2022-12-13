@@ -4,12 +4,16 @@
   {
     static void Main(string[] args)
     {
-      while (true) {
+      AskCommand();
+    }
 
-        new ComandLineInterface()
-        .WaitCommand()
-        .Run();
-      }
+    public static void AskCommand()
+    {
+      new ComandLineInterface()
+      .WaitCommand()
+      .Run();
+
+      AskCommand();
     }
   }
 }
