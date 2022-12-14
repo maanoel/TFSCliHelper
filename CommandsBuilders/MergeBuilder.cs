@@ -60,7 +60,8 @@ namespace PEPCliHelper
         {
           if (version.Equals(_pathFrontTfs)) continue;
 
-          Executor.AddCommand(new Command($"cd", @"C:\RM"));
+          Executor.AddCommand(new Command($"cd", @"C:\RM")); 
+          Executor.AddCommand(new Command($"{TFEXEPATH} workspaces /collection:https://totvstfs.visualstudio.com/DefaultCollection"));
           Executor.AddCommand(new Command($"{TFEXEPATH} merge /baseless /version:{_changeSet}~{_changeSet}", _pathFrontTfs + " " + version + " " + _recursive));
         }
       }
@@ -75,6 +76,7 @@ namespace PEPCliHelper
           if (version.Equals(_pathBackTfs)) continue;
 
           Executor.AddCommand(new Command($"cd", @"C:\RM"));
+          Executor.AddCommand(new Command($"{TFEXEPATH} workspaces /collection:https://totvstfs.visualstudio.com/DefaultCollection"));
           Executor.AddCommand(new Command($"{TFEXEPATH} merge /baseless /version:{_changeSet}~{_changeSet}", _pathBackTfs + " " + version + " " + _recursive));
         }
       }
@@ -89,6 +91,7 @@ namespace PEPCliHelper
           if (version.Equals(_pathSauTfs)) continue;
 
           Executor.AddCommand(new Command($"cd", @"C:\RM"));
+          Executor.AddCommand(new Command($"{TFEXEPATH} workspaces /collection:https://totvstfs.visualstudio.com/DefaultCollection"));
           Executor.AddCommand(new Command($"{TFEXEPATH} merge /baseless /version:{_changeSet}~{_changeSet}", _pathSauTfs + " " + version + " " + _recursive));
         }
       }
