@@ -20,9 +20,10 @@
 
     public ICommandLineInterface Run()
     {
+      var commands = ObterCommands();
       try
       {
-        new ChainOfCommands().SendCommand(_arg.ToLower());
+        new ChainOfCommands(commands).SendCommand(_arg.ToLower());
       }
       catch (InvalidCommandException ex)
       {
@@ -30,6 +31,31 @@
       }
 
       return this;
+    }
+
+    public ICommandChain[] ObterCommands()
+    {
+      return new ICommandChain[] {
+          new GetAll(),
+          new GetVersion(),
+          new BuildAll(),
+          new BuildVersion(),
+          new OpenHostConfig(),
+          new KillHost(),
+          new Merge(),
+          new DeleteBroker(),
+          new Help(),
+          new OpenRm(),
+          new KillAll(),
+          new Cmd(),
+          new Clear(),
+          new OpenAlias(),
+          new OpenHost(),
+          new OpenFront(),
+          new Exit(),
+          new PoUiDoc(),
+          new NotImplemented()
+      };
     }
   }
 }

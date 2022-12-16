@@ -2,8 +2,6 @@
 {
   public class Clear : ICommandChain
   {
-    public ICommandChain AnotherCommand { get; set; }
-
     public void Execute(string arguments)
     {
       if (arguments.Equals("clear") || 
@@ -12,8 +10,6 @@
         new ClearBuilder().Build(arguments);
         return;
       }
-
-      AnotherCommand.Execute(arguments);
     }
   }
 }
