@@ -60,7 +60,7 @@ namespace PEPCliHelper
         {
           if (version.Equals(_pathFrontTfs)) continue;
 
-          Executor.AddCommand(new Command($"cd", @"C:\RM")); 
+          Executor.AddCommand(new Command($"cd", @"C:\Linha-RM")); 
           Executor.AddCommand(new Command($"{TFEXEPATH} workspaces /collection:https://totvstfs.visualstudio.com/DefaultCollection"));
           Executor.AddCommand(new Command($"{TFEXEPATH} merge /baseless /version:{_changeSet}~{_changeSet}", _pathFrontTfs + " " + version + " " + _recursive));
         }
