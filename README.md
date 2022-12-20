@@ -8,7 +8,7 @@ Sdk do .NET a partir da 5.0
 
 https://dotnet.microsoft.com/en-us/download/dotnet/5.0
 
-Utilizar o mapeamento padrão C:\RM\legado\... e C:\RM\atual\release\...
+Utilizar o mapeamento padrão C:\Linha-RM\legado\... e C:\Linha-RM\atual\release\...
 
 ### 🔧 Execução
 
