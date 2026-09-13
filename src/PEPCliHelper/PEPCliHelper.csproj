@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>PEPCliHelper</RootNamespace>
+    <AssemblyName>pep</AssemblyName>
+    <ApplicationIcon>..\..\Kyo-Tux-Aeon-Apps-Command.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Spectre.Console" Version="0.49.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PEPCliHelper.Core\PEPCliHelper.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="PEPCliHelper.Tests" />
+  </ItemGroup>
+
+</Project>

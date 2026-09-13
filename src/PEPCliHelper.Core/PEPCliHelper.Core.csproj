@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>PEPCliHelper.Core</RootNamespace>
+    <AssemblyName>PEPCliHelper.Core</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="PEPCliHelper.Tests" />
+  </ItemGroup>
+
+</Project>
