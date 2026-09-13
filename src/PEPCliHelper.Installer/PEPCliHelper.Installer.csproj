@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <RootNamespace>PEPCliHelper.Installer</RootNamespace>
+    <AssemblyName>PEPCLI-Setup</AssemblyName>
+    <ApplicationIcon>..\..\assets\pep-cli.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <Description>Instalador do PEP CLI</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\assets\pep-cli.ico" LogicalName="assets.pep-cli.ico" />
+  </ItemGroup>
+
+  <!-- Payload: pep.exe publicado (scripts/build-installer.ps1 passa -p:PepPayload=...). Sem ele o build segue, e o instalador avisa em tempo de execução. -->
+  <ItemGroup Condition="'$(PepPayload)' != '' And Exists('$(PepPayload)')">
+    <EmbeddedResource Include="$(PepPayload)" LogicalName="payload.pep.exe" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="PEPCliHelper.Installer.Tests" />
+  </ItemGroup>
+
+</Project>

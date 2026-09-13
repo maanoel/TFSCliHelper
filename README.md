@@ -31,7 +31,7 @@ Escopo: somente backend — `back` (Sau-PEP) e `sau` (Sau-Saude). O front do PEP
 ## Pré-requisitos
 
 - Windows 10/11 x64.
-- **.NET 9 Runtime** (execução). Para desenvolver: **SDK .NET 9.0.306** (fixado em `global.json`).
+- **.NET 9 Runtime** só na instalação manual (o instalador já inclui o runtime). Para desenvolver: **SDK .NET 9.0.306** (fixado em `global.json`).
 - **Visual Studio 2022** com Team Explorer (fornece `TF.exe`) e MSBuild. Os caminhos são localizados via `vswhere` ou configurados.
 - Workspaces TFVC já mapeados pelo Visual Studio (o CLI **não** cria nem altera mapeamentos).
 - Acesso à coleção (VPN quando necessário) e login feito no Visual Studio.
@@ -40,9 +40,11 @@ Escopo: somente backend — `back` (Sau-PEP) e `sau` (Sau-Saude). O front do PEP
 
 ## Instalação
 
-1. Baixe/copie a pasta publicada `pep` (gerada por `scripts/publish.ps1`) para, por exemplo, `C:\Ferramentas\pep`.
-2. Adicione a pasta ao `PATH` do usuário.
-3. Abra um novo terminal e rode `pep version`.
+1. Baixe `PEPCLI-Setup-x.y.z.exe` (gerado por `scripts/build-installer.ps1`) e execute — não precisa de administrador nem de .NET.
+2. Clique em **Instalar** (ou **Atualizar**, se já houver uma versão).
+3. Abra um novo terminal e digite `pep`.
+
+Detalhes, modo silencioso e desinstalação em [docs/DISTRIBUICAO.md](docs/DISTRIBUICAO.md). A instalação manual (`scripts/publish.ps1` + PATH) continua disponível.
 
 ## Primeiros passos
 

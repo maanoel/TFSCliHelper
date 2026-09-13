@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>PEPCliHelper</RootNamespace>
     <AssemblyName>pep</AssemblyName>
-    <ApplicationIcon>..\..\Kyo-Tux-Aeon-Apps-Command.ico</ApplicationIcon>
+    <ApplicationIcon>..\..\assets\pep-cli.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>

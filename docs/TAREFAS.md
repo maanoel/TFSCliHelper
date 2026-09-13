@@ -57,3 +57,4 @@ Legenda: ✅ concluída · 🔄 em andamento · ⏳ a fazer · ⛔ bloqueada · 
 | ✅ C12 | 142 testes xUnit |
 | ✅ C13 | Revisão de segurança independente e correções |
 | ✅ C14 | Publicação `pep.exe` validada |
+| ✅ C15 | Instalador `PEPCLI-Setup` (janela única, por usuário, modo silencioso, 34 testes) + ícone CLI `assets/pep-cli.ico` |
