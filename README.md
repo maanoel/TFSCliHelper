@@ -99,7 +99,7 @@ Antes de pedir confirmação, para cada destino o CLI verifica:
 8. `tf merge /preview` real;
 9. execuções anteriores do mesmo changeset no histórico local.
 
-Execução: sequencial, `tf merge /version:C<id>~C<id>` (um único changeset), comparação de pending changes antes/depois, conflitos listados e **nunca resolvidos** pelo CLI. Após falha ou conflito, os destinos seguintes ficam *não iniciados* (a menos que `--continue-on-failure`).
+Execução: sequencial, `tf merge /version:C<id>~C<id>` (um único changeset), comparação de pending changes antes/depois, conflitos listados e **nunca resolvidos** pelo CLI. Por padrão segue para os demais destinos após falha ou conflito (`--stop-on-failure` interrompe); rede/autenticação, indeterminado e cancelamento sempre interrompem.
 
 ## Códigos de saída
 

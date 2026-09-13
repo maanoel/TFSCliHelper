@@ -87,9 +87,9 @@ public sealed class AppServices
 
   public LocalToolsService LocalTools => new(FileSystem, Processes, Time);
 
-  public MergePlanner MergePlanner => new(Tfvc, FileSystem, Journal);
+  public MergePlanner MergePlanner => new(Tfvc, FileSystem, Journal, Time);
 
-  public MergeExecutor MergeExecutor(MergePlanner planner) => new(Tfvc, planner);
+  public MergeExecutor MergeExecutor(MergePlanner planner) => new(Tfvc, planner, Time);
 
   public GetService GetService => new(Tfvc, FileSystem);
 

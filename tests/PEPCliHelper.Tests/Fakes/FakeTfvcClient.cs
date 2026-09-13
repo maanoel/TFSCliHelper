@@ -28,6 +28,8 @@ public sealed class FakeTfvcClient : ITfvcClient
 
   public Dictionary<string, List<string>> Conflicts { get; } = new(StringComparer.OrdinalIgnoreCase);
 
+  public TfStatus ConflictStatus { get; set; } = TfStatus.Success;
+
   public Dictionary<string, List<string>> ConflictsAddedByMerge { get; } = new(StringComparer.OrdinalIgnoreCase);
 
   public Dictionary<string, TfStatus> MergeStatus { get; } = new(StringComparer.OrdinalIgnoreCase);
@@ -45,7 +47,7 @@ public sealed class FakeTfvcClient : ITfvcClient
 
   public Task<WorkfoldQuery> GetWorkfoldAsync(string localPath, CancellationToken cancellationToken)
   {
-    Calls.Add($"workfold:{localPath}");
+    Record($"workfold:{localPath}");
     if (WorkfoldStatus != TfStatus.Success)
       return Task.FromResult(new WorkfoldQuery(Result(WorkfoldStatus), null));
 
@@ -62,13 +64,13 @@ public sealed class FakeTfvcClient : ITfvcClient
 
   public Task<TfResult> ListWorkspacesAsync(string collection, CancellationToken cancellationToken)
   {
-    Calls.Add("workspaces");
+    Record("workspaces");
     return Task.FromResult(Result(WorkfoldStatus));
   }
 
   public Task<ChangesetQuery> GetChangesetAsync(int changeset, string collection, CancellationToken cancellationToken)
   {
-    Calls.Add($"changeset:{changeset}");
+    Record($"changeset:{changeset}");
     return Task.FromResult(ChangesetStatus == TfStatus.Success && Changeset is not null
       ? new ChangesetQuery(Result(TfStatus.Success), Changeset)
       : new ChangesetQuery(Result(ChangesetStatus == TfStatus.Success ? TfStatus.Failed : ChangesetStatus), null));
@@ -76,19 +78,21 @@ public sealed class FakeTfvcClient : ITfvcClient
 
   public Task<ItemListQuery> GetPendingChangesAsync(string localPath, CancellationToken cancellationToken)
   {
-    Calls.Add($"status:{localPath}");
+    Record($"status:{localPath}");
     return Task.FromResult(new ItemListQuery(Result(TfStatus.Success), Pending.TryGetValue(localPath, out var list) ? list.ToList() : []));
   }
 
   public Task<ItemListQuery> GetConflictsAsync(string localPath, CancellationToken cancellationToken)
   {
-    Calls.Add($"resolve-preview:{localPath}");
+    Record($"resolve-preview:{localPath}");
+    if (ConflictStatus != TfStatus.Success)
+      return Task.FromResult(new ItemListQuery(Result(ConflictStatus), []));
     return Task.FromResult(new ItemListQuery(Result(TfStatus.Success), Conflicts.TryGetValue(localPath, out var list) ? list.ToList() : []));
   }
 
   public Task<CandidateQuery> GetMergeCandidatesAsync(string sourceServerPath, string targetServerPath, int changeset, string workingDirectory, CancellationToken cancellationToken)
   {
-    Calls.Add($"candidate:{targetServerPath}");
+    Record($"candidate:{targetServerPath}");
     if (CandidateStatus.TryGetValue(targetServerPath, out var status) && status != TfStatus.Success)
       return Task.FromResult(new CandidateQuery(Result(status, 100, "TF14087: sem relação de branch."), new HashSet<int>()));
 
@@ -98,7 +102,7 @@ public sealed class FakeTfvcClient : ITfvcClient
 
   public Task<ItemListQuery> PreviewMergeAsync(string sourceServerPath, string targetServerPath, int changeset, string workingDirectory, CancellationToken cancellationToken)
   {
-    Calls.Add($"merge-preview:{targetServerPath}");
+    Record($"merge-preview:{targetServerPath}");
     var status = PreviewStatus.TryGetValue(targetServerPath, out var configured) ? configured : TfStatus.Success;
     var line = status == TfStatus.PartialSuccess
       ? $"Conflito (mesclar, editar): {sourceServerPath}/a.cs;C1~C1 -> {targetServerPath}/a.cs;C0"
@@ -108,7 +112,7 @@ public sealed class FakeTfvcClient : ITfvcClient
 
   public Task<TfResult> MergeChangesetAsync(string sourceServerPath, string targetServerPath, int changeset, string workingDirectory, Action<string>? onOutputLine, CancellationToken cancellationToken)
   {
-    Calls.Add($"merge:{workingDirectory}");
+    Record($"merge:{workingDirectory}");
     if (cancellationToken.IsCancellationRequested)
       return Task.FromResult(Result(TfStatus.Cancelled, -1));
 
@@ -121,20 +125,32 @@ public sealed class FakeTfvcClient : ITfvcClient
         Conflicts[workingDirectory] = (Conflicts.TryGetValue(workingDirectory, out var existing) ? existing : []).Concat(conflicts).ToList();
     }
 
-    return Task.FromResult(Result(status, status switch { TfStatus.Success => 0, TfStatus.PartialSuccess => 1, _ => 100 }));
+    return Task.FromResult(Result(status, status switch { TfStatus.Success => 0, TfStatus.PartialSuccess => 1, _ => 100 },
+      MergeOutput.TryGetValue(workingDirectory, out var output) ? output : ""));
   }
 
   public Task<ItemListQuery> PreviewGetAsync(string localPath, CancellationToken cancellationToken)
   {
-    Calls.Add($"get-preview:{localPath}");
+    Record($"get-preview:{localPath}");
     return Task.FromResult(new ItemListQuery(Result(TfStatus.Success), Outdated.Contains(localPath) ? [$"{localPath}\\pasta:"] : []));
   }
 
   public Task<TfResult> GetLatestAsync(string localPath, Action<string>? onOutputLine, CancellationToken cancellationToken)
   {
-    Calls.Add($"get:{localPath}");
+    Record($"get:{localPath}");
     var status = GetStatus.TryGetValue(localPath, out var configured) ? configured : TfStatus.Success;
     return Task.FromResult(Result(status, status switch { TfStatus.Success => 0, TfStatus.PartialSuccess => 1, _ => 100 }));
+  }
+
+  /// <summary>Saída do tf merge por pasta local (ex.: linhas de AutoMerge ou códigos TF).</summary>
+  public Dictionary<string, string> MergeOutput { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+  private readonly object _callsGate = new();
+
+  private void Record(string call)
+  {
+    lock (_callsGate)
+      Calls.Add(call);
   }
 
   private static TfResult Result(TfStatus status, int exitCode = 0, string output = "") =>

@@ -43,7 +43,8 @@ pep merge ... --dry-run [--json]
 **Plano e confirmação**
 - Tabela: origem, projeto, changeset, coleção, e por destino workspace, caminho local, caminho de servidor, pendências, conflitos, atualização, preview, impedimentos.
 - Mensagem obrigatória: *"O merge será aplicado aos destinos selecionados e permanecerá em Pending Changes. Nenhum check-in será realizado."*
-- Destinos bloqueados: interativo pergunta se segue só com os prontos; não interativo aborta (exit 3) salvo `--continue-on-failure`.
+- Destinos bloqueados: interativo pergunta se segue só com os prontos; não interativo segue com os prontos e lista os bloqueados, salvo `--stop-on-failure` (exit 3) — decisão 2026-09-13, ver spec 007.
+- Desempenho (2026-09-13): destinos avaliados em paralelo (até 4, somente consultas), ordem do plano preservada; histórico local lido uma vez por plano. Falha de rede/autenticação bloqueia os destinos ainda não iniciados.
 - `--yes` dispensa só a confirmação; não ignora validações nem autoriza nada além do plano.
 - **Dry-run:** executa todas as consultas acima e **nenhuma** alteração (sem merge, sem get). Exit 0 se todos prontos/já integrados, 3 se houver bloqueio. Informa que conflitos só são conhecidos na execução real.
 

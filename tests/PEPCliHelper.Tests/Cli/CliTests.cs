@@ -209,15 +209,66 @@ public class CliBehaviorTests
   }
 
   [Fact]
-  public async Task Merge_DestinoBloqueadoSemContinueOnFailure_NaoExecutaNenhum()
+  public async Task Merge_DestinoBloqueadoComStopOnFailure_NaoExecutaNenhum()
+  {
+    var cli = new CliHarness();
+    cli.Tfvc.Workfolds.Remove(@"C:\LR\Legado\12.1.2602");
+
+    var exit = await cli.RunAsync("merge", "--project", "back", "--source", "atual", "--all-legacy", "--changeset", "861799", "--yes", "--stop-on-failure");
+
+    Assert.Equal(ExitCodes.Precondition, exit);
+    Assert.Equal(0, cli.Tfvc.MergeCount);
+  }
+
+  [Fact]
+  public async Task Merge_DestinoBloqueadoPorPadrao_ExecutaSomenteProntosEInformaBloqueados()
   {
     var cli = new CliHarness();
     cli.Tfvc.Workfolds.Remove(@"C:\LR\Legado\12.1.2602");
 
     var exit = await cli.RunAsync("merge", "--project", "back", "--source", "atual", "--all-legacy", "--changeset", "861799", "--yes");
 
-    Assert.Equal(ExitCodes.Precondition, exit);
-    Assert.Equal(0, cli.Tfvc.MergeCount);
+    Assert.Equal(ExitCodes.ConflictOrPartial, exit);
+    Assert.Equal(1, cli.Tfvc.MergeCount);
+    Assert.Contains("Merge aplicado em 1 de 2 destinos selecionados", cli.Text);
+    Assert.Contains("12.1.2602 — Bloqueado", cli.Text);
+  }
+
+  [Fact]
+  public async Task Merge_StopEContinueOnFailureJuntos_ErroDeUsoSemChamadasTfvc()
+  {
+    var cli = new CliHarness();
+
+    var exit = await cli.RunAsync("merge", "--project", "back", "--source", "atual", "--target", "2606", "--changeset", "861799", "--yes",
+      "--stop-on-failure", "--continue-on-failure");
+
+    Assert.Equal(ExitCodes.Usage, exit);
+    Assert.Empty(cli.Tfvc.Calls);
+  }
+
+  [Fact]
+  public async Task Merge_ContinueOnFailureCompatibilidade_AceitoEExecuta()
+  {
+    var cli = new CliHarness();
+
+    var exit = await cli.RunAsync("merge", "--project", "back", "--source", "atual", "--target", "2606", "--changeset", "861799", "--yes", "--continue-on-failure");
+
+    Assert.Equal(ExitCodes.Success, exit);
+    Assert.Equal(1, cli.Tfvc.MergeCount);
+  }
+
+  [Fact]
+  public async Task Merge_ResultadoJson_ContagemDeAplicadosESelecionados()
+  {
+    var cli = new CliHarness();
+
+    var exit = await cli.RunAsync("merge", "--project", "back", "--source", "atual", "--all-legacy", "--changeset", "861799", "--yes", "--json");
+
+    Assert.Equal(ExitCodes.Success, exit);
+    using var json = JsonDocument.Parse(cli.Text);
+    var result = json.RootElement.GetProperty("resultado");
+    Assert.Equal(2, result.GetProperty("aplicados").GetInt32());
+    Assert.Equal(2, result.GetProperty("selecionados").GetInt32());
   }
 
   [Fact]

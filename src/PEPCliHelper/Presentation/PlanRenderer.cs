@@ -23,7 +23,7 @@ public static class PlanRenderer
     ui.AddKeyValue(grid, "Changeset", $"[bold {ui.Theme.Accent}]C{request.Changeset}[/]");
     ui.AddKeyValue(grid, "Destinos", Ui.Escape(string.Join(", ", request.Targets.Select(t => t.Id))));
     ui.AddKeyValue(grid, "Coleção", Ui.Escape(plan.Collection ?? "não configurada"));
-    ui.AddKeyValue(grid, "Em falha", request.ContinueOnFailure ? "continuar nos destinos independentes (--continue-on-failure)" : "interromper destinos seguintes");
+    ui.AddKeyValue(grid, "Em falha", request.StopOnFailure ? "interromper (--stop-on-failure)" : "continuar nos demais destinos (padrão)");
     ui.Write(grid);
 
     if (plan.Scope is { } scope)
@@ -146,9 +146,22 @@ public static class PlanRenderer
       }
     }
 
-    var notRun = result.Targets.Where(t => t.State is MergeTargetState.NotStarted or MergeTargetState.Blocked).Select(t => t.Target.Id).ToList();
-    if (notRun.Count > 0)
-      ui.Warn($"Destinos não executados: {string.Join(", ", notRun)}.");
+    ui.Blank();
+    var applied = $"Merge aplicado em {result.AppliedCount} de {result.SelectedCount} destinos selecionados";
+    var others = new List<string>();
+    if (result.Count(MergeTargetState.AlreadyIntegrated) is > 0 and var integrated)
+      others.Add($"{integrated} já integrado(s)");
+    if (result.Count(MergeTargetState.NoApplicableChanges) is > 0 and var noChanges)
+      others.Add($"{noChanges} sem alterações aplicáveis");
+    var summary = others.Count > 0 ? $"{applied} ({string.Join(", ", others)})." : $"{applied}.";
+    ui.Markup($"  {ui.Theme.State(result.AppliedCount > 0 ? StateKind.Ok : StateKind.Warn, summary)}");
+
+    var attention = result.Targets
+      .Where(t => t.State is MergeTargetState.Blocked or MergeTargetState.NotStarted or MergeTargetState.Failed
+        or MergeTargetState.Indeterminate or MergeTargetState.Cancelled)
+      .ToList();
+    foreach (var target in attention)
+      ui.Markup($"  {ui.Theme.State(Kind(target.State), $"{target.Target.Id} — {MergeTargetResult.Describe(target.State)}")}: {Ui.Escape(target.Message)}");
 
     ui.Title("Próximos passos");
     ui.Hint("Revise as pending changes: pep pending list <versao> --project " + plan.Request.Project.Alias + "  (ou Source Control Explorer)");

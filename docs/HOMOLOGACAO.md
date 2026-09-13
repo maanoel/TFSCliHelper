@@ -71,6 +71,13 @@ Validados com saída real: `tf changeset` (Itens/`editar`), `tf workfold` (`Work
 
 Resultado: 12.1.2510, 12.1.2602 e 12.1.2606 **Aplicado com conflitos** (1 pending change `mesclar` + 1 conflito cada), sem check-in. 12.1.2506: merge aplicado com conflito na 1ª execução (classificado *indeterminado* antes da correção do parser) e depois encontrado **sem pending changes** e ainda candidato — desfeito fora do CLI.
 
+### Merge em todas as versões e desempenho (2026-09-13)
+
+- Causa da sensação "merge só em algumas versões": (1) interrupção após o primeiro conflito — agora o padrão é **continuar nos demais destinos** (`--stop-on-failure` restaura o comportamento estrito); (2) menu `pep` aberto antes da atualização continuava com o parser antigo — **feche e reabra o `pep` após atualizar**.
+- Exit 1 com `Conflito resolvido automaticamente ... como AutoMerge`, sem conflito pendente e sem código `TFnnnnn`, é classificado como aplicado.
+- Desempenho medido: dry-run real de 4 legadas **22,6 s** (antes ~60 s) com planejamento em paralelo (máx. 4). Execução: revalidação leve para plano com menos de 10 min (reaproveita o `tf status` como estado anterior) e consultas pós-merge em paralelo; merges continuam **sequenciais**.
+- A homologar: `tf.exe` em paralelo no mesmo workspace sob carga real (validado em dry-run real sem erros).
+
 ## 3. Homologação TFVC (parcial — ver execução real acima)
 
 **Motivo:** a coleção não estava acessível na máquina de desenvolvimento (TF400324 / SSL) e não há coleção/branches de teste provisionados.

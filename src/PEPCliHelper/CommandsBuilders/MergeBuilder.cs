@@ -26,6 +26,14 @@ public sealed class MergeBuilder : CommandBuilderBase
     var catalog = Services.RequireCatalog();
     var legacySyntax = line.Positionals.Count > 0;
     var dryRun = line.Flag("dry-run");
+    var stopOnFailure = line.Flag("stop-on-failure");
+
+    if (stopOnFailure && line.Flag("continue-on-failure"))
+    {
+      throw new UsageException(
+        "Use --stop-on-failure ou --continue-on-failure, não os dois.",
+        "Continuar nos demais destinos já é o padrão; informe --stop-on-failure apenas para interromper após falha, conflito ou bloqueio.");
+    }
 
     if (legacySyntax && line.Positionals.Count != 3)
     {
@@ -76,7 +84,7 @@ public sealed class MergeBuilder : CommandBuilderBase
     if (errors.Count > 0)
       throw new UsageException(string.Join(" ", errors), $"Uso: {line.Help.Usage}");
 
-    var request = new MergeRequest(project, source, targets, changeset.Value, line.Flag("continue-on-failure"));
+    var request = new MergeRequest(project, source, targets, changeset.Value, stopOnFailure);
     var history = BeginHistory("merge", line);
     history.Describe(project.Alias, source.Id, changeset, targets.Select(t => t.Id));
 
@@ -161,16 +169,20 @@ public sealed class MergeBuilder : CommandBuilderBase
         if (!await Ui.ConfirmAsync($"Destinos bloqueados ({blocked}) serão ignorados. Continuar apenas com os prontos?", false, cancellationToken))
           return Cancelled(history);
       }
-      else if (!request.ContinueOnFailure)
+      else if (request.StopOnFailure)
       {
         var error = new PreconditionException(
-          $"Destinos bloqueados na pré-verificação: {blocked}.",
-          "Corrija os impedimentos ou repita com --continue-on-failure para executar somente os destinos prontos.");
+          $"Destinos bloqueados na pré-verificação: {blocked}. Nada foi executado (--stop-on-failure).",
+          "Corrija os impedimentos ou repita sem --stop-on-failure para executar somente os destinos prontos.");
         if (!Ui.Json)
           throw error;
         Output(plan, dryRun: false, result: null);
         history.Complete(ExitCodes.Precondition, "bloqueado");
         return ExitCodes.Precondition;
+      }
+      else if (!Ui.Json)
+      {
+        Ui.Warn($"Destinos bloqueados ({blocked}) serão ignorados; o merge segue somente nos prontos: {string.Join(", ", plan.ReadyTargets.Select(t => t.Target.Id))}.");
       }
     }
 

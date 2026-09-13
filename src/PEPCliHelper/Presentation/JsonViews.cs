@@ -69,6 +69,10 @@ public static class JsonViews
     codigoSaida = result.ExitCode,
     situacao = result.Status,
     checkInRealizado = false,
+    selecionados = result.SelectedCount,
+    aplicados = result.AppliedCount,
+    jaIntegrados = result.Count(MergeTargetState.AlreadyIntegrated),
+    semAlteracoes = result.Count(MergeTargetState.NoApplicableChanges),
     destinos = result.Targets.Select(t => new
     {
       versao = t.Target.Id,

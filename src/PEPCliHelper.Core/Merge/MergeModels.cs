@@ -9,7 +9,7 @@ public sealed record MergeRequest(
   VersionEntry Source,
   IReadOnlyList<VersionEntry> Targets,
   int Changeset,
-  bool ContinueOnFailure = false)
+  bool StopOnFailure = false)
 {
   /// <summary>Valida a entrada. Nunca completa valores ausentes por conta própria.</summary>
   public static IReadOnlyList<string> Validate(ProjectDefinition? project, VersionEntry? source, IReadOnlyList<VersionEntry> targets, int? changeset)
@@ -81,6 +81,9 @@ public sealed class MergeTargetPlan
   /// <summary>Linhas de conflito informadas pelo tf merge /preview (não bloqueiam).</summary>
   public List<string> PredictedConflicts { get; } = [];
 
+  /// <summary>Resultado do tf status usado nas etapas 4–5; reaproveitado como estado "antes" na execução.</summary>
+  internal ItemListQuery? PendingQuery { get; set; }
+
   public void Block(string reason)
   {
     Readiness = TargetReadiness.Blocked;
@@ -96,6 +99,9 @@ public sealed class MergePlan
 
   public string? Collection { get; init; }
 
+  /// <summary>Momento em que o plano foi montado; define revalidação leve ou completa na execução.</summary>
+  public DateTimeOffset CreatedAt { get; init; }
+
   public ChangesetScope? Scope { get; set; }
 
   public List<string> GlobalBlockers { get; } = [];
@@ -104,8 +110,14 @@ public sealed class MergePlan
 
   public List<MergeTargetPlan> Targets { get; } = [];
 
-  /// <summary>Rede/autenticação: nada mais deve ser executado.</summary>
-  public bool EnvironmentFailure { get; set; }
+  private int _environmentFailure;
+
+  /// <summary>Rede/autenticação: nada mais deve ser executado. Seguro para avaliação concorrente de destinos.</summary>
+  public bool EnvironmentFailure
+  {
+    get => Volatile.Read(ref _environmentFailure) != 0;
+    set => Interlocked.Exchange(ref _environmentFailure, value ? 1 : 0);
+  }
 
   public bool HasBlockedTargets => Targets.Any(t => t.Readiness == TargetReadiness.Blocked);
 
@@ -160,4 +172,11 @@ public sealed record MergeExecutionResult(IReadOnlyList<MergeTargetResult> Targe
   public int ExitCode => CancellationRequested ? ExitCodes.Cancelled : MergeOutcome.ComputeExitCode(Targets);
 
   public string Status => MergeOutcome.StatusText(ExitCode);
+
+  /// <summary>Destinos em que o tf merge alterou o workspace (com pending changes ou com conflitos).</summary>
+  public int AppliedCount => Targets.Count(t => t.State is MergeTargetState.AppliedWithPendingChanges or MergeTargetState.AppliedWithConflicts);
+
+  public int SelectedCount => Targets.Count;
+
+  public int Count(MergeTargetState state) => Targets.Count(t => t.State == state);
 }

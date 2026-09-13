@@ -15,6 +15,7 @@ public sealed class MergeChain : ICommandChain
       "Sem opções, pergunta projeto, origem, destinos e changeset.\n" +
       "Antes de executar valida changeset, escopo do projeto, mapeamentos, relação de merge, pending changes,\n" +
       "conflitos, atualização local e preview. Nunca usa baseless, nunca resolve conflitos e nunca faz check-in.\n" +
+      "Por padrão o merge roda em todos os destinos prontos, mesmo após falha ou conflito em um deles (--stop-on-failure interrompe).\n" +
       "Sintaxe antiga 'merge <projeto> <versao> <changeset>': a versão é a ORIGEM e os destinos são obrigatórios.",
     MaxPositionals = 3,
     Options =
@@ -25,7 +26,8 @@ public sealed class MergeChain : ICommandChain
       new OptionSpec("all-legacy", null, "Todas as legadas ativas do catálogo como destino."),
       new OptionSpec("changeset", "<id>", "Changeset de origem (um único changeset).", ShortName: "c"),
       new OptionSpec("dry-run", null, "Somente valida e mostra o plano. Não altera nada."),
-      new OptionSpec("continue-on-failure", null, "Após falha ou conflito, segue para destinos independentes (rede, autenticação e indeterminado sempre interrompem)."),
+      new OptionSpec("stop-on-failure", null, "Interrompe os destinos seguintes após falha, conflito ou bloqueio (rede, autenticação, indeterminado e cancelamento sempre interrompem)."),
+      new OptionSpec("continue-on-failure", null, "Padrão; mantido por compatibilidade."),
     ],
     Examples =
     [

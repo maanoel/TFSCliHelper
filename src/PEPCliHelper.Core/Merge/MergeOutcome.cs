@@ -1,13 +1,22 @@
+using System.Text.RegularExpressions;
 using PEPCliHelper.Core.Common;
 using PEPCliHelper.Core.Tfvc;
 
 namespace PEPCliHelper.Core.Merge;
 
 /// <summary>Regras puras de classificação, interrupção e código de saída do merge (spec 007).</summary>
-public static class MergeOutcome
+public static partial class MergeOutcome
 {
+  [GeneratedRegex(@"\bTF\d{5,6}\b")]
+  private static partial Regex TfErrorCodeRegex();
+
   /// <summary>Classifica um destino após o tf merge, comparando pendências antes/depois.</summary>
   /// <param name="previewHadItems">O preview listou itens: exit 0 sem novas pendências não é confirmável.</param>
+  /// <remarks>
+  /// Evidência real (tf.exe 17.14 pt-BR, 2026-09-13): merge de vários arquivos retorna exit 1 com
+  /// "Conflito resolvido automaticamente: ... como AutoMerge" sem conflito pendente. Exit 1 sem conflitos,
+  /// com novas pendências e sem código de erro TF é aplicado; qualquer código TF mantém indeterminado.
+  /// </remarks>
   public static MergeTargetState Classify(TfResult merge, int newPendingCount, int conflictCount, bool previewHadItems = false)
   {
     if (merge.Status == TfStatus.Cancelled)
@@ -20,13 +29,20 @@ public static class MergeOutcome
     {
       TfStatus.Success when newPendingCount > 0 => MergeTargetState.AppliedWithPendingChanges,
       TfStatus.Success => previewHadItems ? MergeTargetState.Indeterminate : MergeTargetState.NoApplicableChanges,
+      TfStatus.PartialSuccess when newPendingCount > 0 && !HasTfErrorCode(merge.Output) => MergeTargetState.AppliedWithPendingChanges,
       TfStatus.PartialSuccess => MergeTargetState.Indeterminate,
       _ => newPendingCount > 0 ? MergeTargetState.Indeterminate : MergeTargetState.Failed,
     };
   }
 
-  /// <summary>Após este estado, os próximos destinos devem ficar "não iniciados"?</summary>
-  public static bool ShouldStop(MergeTargetState state, bool continueOnFailure, bool environmentFailure)
+  /// <summary>Saída contém código de erro do TFVC (ex.: TF14087).</summary>
+  public static bool HasTfErrorCode(string output) => TfErrorCodeRegex().IsMatch(output);
+
+  /// <summary>
+  /// Após este estado, os próximos destinos devem ficar "não iniciados"? Padrão (decisão 2026-09-13): continuar
+  /// nos demais destinos. Rede/autenticação, cancelamento e indeterminado sempre interrompem.
+  /// </summary>
+  public static bool ShouldStop(MergeTargetState state, bool stopOnFailure, bool environmentFailure)
   {
     if (environmentFailure)
       return true;
@@ -34,7 +50,7 @@ public static class MergeOutcome
     return state switch
     {
       MergeTargetState.Indeterminate or MergeTargetState.Cancelled => true,
-      MergeTargetState.Failed or MergeTargetState.AppliedWithConflicts or MergeTargetState.Blocked => !continueOnFailure,
+      MergeTargetState.Failed or MergeTargetState.AppliedWithConflicts or MergeTargetState.Blocked => stopOnFailure,
       _ => false,
     };
   }

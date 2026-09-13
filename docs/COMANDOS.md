@@ -32,7 +32,10 @@ Propaga **um** changeset da origem para um ou mais destinos. Resultado em Pendin
 | `--all-legacy` | Todas as legadas **ativas** (exceto a origem) |
 | `--changeset, -c <id>` | Changeset (aceita `861799` ou `C861799`) |
 | `--dry-run` | Só consultas e plano |
-| `--continue-on-failure` | Após falha/conflito, segue em destinos independentes; também permite executar só os destinos prontos quando há bloqueados |
+| `--stop-on-failure` | Interrompe os destinos seguintes após falha, conflito ou bloqueio; com destinos bloqueados no plano (não interativo), aborta com exit 3 |
+| `--continue-on-failure` | Padrão; mantido por compatibilidade (não pode ser combinado com `--stop-on-failure`) |
+
+Comportamento: por padrão o merge roda em **todos** os destinos prontos, mesmo após falha ou conflito em um deles; destinos bloqueados no plano são ignorados e listados no resumo (interativo pergunta antes). Rede/autenticação, cancelamento e resultado indeterminado sempre interrompem. A pré-verificação avalia até 4 destinos em paralelo (somente consultas); a aplicação é sempre sequencial. Com plano de menos de 10 minutos, a revalidação antes do merge consulta apenas pending changes e arquivos graváveis sem checkout; plano mais antigo é revalidado por completo. O resumo mostra "Merge aplicado em X de Y destinos selecionados" (JSON: `aplicados`, `selecionados`).
 
 Sintaxe antiga aceita: `pep merge <projeto> <versao> <changeset>` — a versão é a **origem**; destinos são escolhidos no terminal ou exigidos por opção.
 

@@ -9,13 +9,18 @@ namespace PEPCliHelper.Core.Merge;
 /// </summary>
 public sealed class MergeExecutor
 {
+  /// <summary>Plano mais novo que isto usa revalidação leve (pending changes + graváveis sem checkout).</summary>
+  public static readonly TimeSpan LightRevalidationWindow = TimeSpan.FromMinutes(10);
+
   private readonly ITfvcClient _tfvc;
   private readonly MergePlanner _planner;
+  private readonly TimeProvider _time;
 
-  public MergeExecutor(ITfvcClient tfvc, MergePlanner planner)
+  public MergeExecutor(ITfvcClient tfvc, MergePlanner planner, TimeProvider? time = null)
   {
     _tfvc = tfvc;
     _planner = planner;
+    _time = time ?? TimeProvider.System;
   }
 
   public async Task<MergeExecutionResult> ExecuteAsync(MergePlan plan, IOperationLog log, CancellationToken cancellationToken)
@@ -60,7 +65,7 @@ public sealed class MergeExecutor
       var result = await ExecuteTargetAsync(plan, target, log, cancellationToken);
       results.Add(result.Result);
       environmentFailure |= result.EnvironmentFailure;
-      stop = MergeOutcome.ShouldStop(result.Result.State, request.ContinueOnFailure, result.EnvironmentFailure);
+      stop = MergeOutcome.ShouldStop(result.Result.State, request.StopOnFailure, result.EnvironmentFailure);
     }
 
     return new MergeExecutionResult(results, environmentFailure, cancellationToken.IsCancellationRequested);
@@ -73,12 +78,15 @@ public sealed class MergeExecutor
     var name = target.Target.Id;
     var started = DateTimeOffset.UtcNow;
 
-    // 1: revalidação
-    log.Step(name, "Revalidando condições críticas");
+    // 1: revalidação (leve para plano recente; completa para plano antigo)
+    var light = _time.GetUtcNow() - plan.CreatedAt < LightRevalidationWindow;
+    log.Step(name, light ? "Revalidando pending changes e arquivos graváveis" : "Revalidando condições críticas (plano com mais de 10 minutos)");
     MergeTargetPlan revalidated;
     try
     {
-      revalidated = await _planner.RevalidateAsync(plan, target, log, cancellationToken);
+      revalidated = light
+        ? await _planner.RevalidateLocalStateAsync(plan, target, log, cancellationToken)
+        : await _planner.RevalidateAsync(plan, target, log, cancellationToken);
     }
     catch (OperationCanceledException)
     {
@@ -94,13 +102,13 @@ public sealed class MergeExecutor
     if (revalidated.Readiness == TargetReadiness.Blocked)
       return (Result(target, MergeTargetState.Blocked, "Bloqueado na revalidação: " + string.Join(" ", revalidated.Blockers)), plan.EnvironmentFailure);
 
-    // 2: estado anterior (consultas pós-merge não usam o token: o estado sempre é inspecionado)
-    var before = await _tfvc.GetPendingChangesAsync(target.Location.LocalPath, CancellationToken.None);
-    log.ToolResult(name, "tf status (antes)", before.Result.ExitCode, before.Result.StatusText, before.Result.Duration, before.Result.Output);
-    if (!before.IsReliable)
+    // 2: estado anterior = o mesmo tf status da revalidação (sem segunda consulta)
+    var before = revalidated.PendingQuery;
+    if (before is not { IsReliable: true })
     {
-      return (Result(target, MergeTargetState.Blocked, $"Não foi possível registrar o estado anterior com confiança (tf: {before.Result.Summary}). Merge não aplicado."),
-        before.Result.IsEnvironmentError);
+      return (Result(target, MergeTargetState.Blocked,
+          $"Não foi possível registrar o estado anterior com confiança (tf: {before?.Result.Summary ?? "status não consultado"}). Merge não aplicado."),
+        before?.Result.IsEnvironmentError ?? false);
     }
 
     // 3: merge
@@ -110,11 +118,14 @@ public sealed class MergeExecutor
       line => log.Output(name, line), cancellationToken);
     log.ToolResult(name, "tf merge", merge.ExitCode, merge.StatusText, merge.Duration, merge.Output);
 
-    // 4–6: inspeção
+    // 4–6: inspeção (consultas pós-merge não usam o token: o estado sempre é inspecionado; em paralelo, só leitura)
     log.Step(name, "Inspecionando conflitos e pending changes");
-    var conflicts = await _tfvc.GetConflictsAsync(target.Location.LocalPath, CancellationToken.None);
+    var conflictsTask = _tfvc.GetConflictsAsync(target.Location.LocalPath, CancellationToken.None);
+    var afterTask = _tfvc.GetPendingChangesAsync(target.Location.LocalPath, CancellationToken.None);
+    await Task.WhenAll(conflictsTask, afterTask);
+    var conflicts = await conflictsTask;
+    var after = await afterTask;
     log.ToolResult(name, "tf resolve /preview", conflicts.Result.ExitCode, conflicts.Result.StatusText, conflicts.Result.Duration, conflicts.Result.Output);
-    var after = await _tfvc.GetPendingChangesAsync(target.Location.LocalPath, CancellationToken.None);
     log.ToolResult(name, "tf status (depois)", after.Result.ExitCode, after.Result.StatusText, after.Result.Duration, after.Result.Output);
 
     var newPending = after.IsReliable ? MergeOutcome.NewItems(before.Items, after.Items) : [];
@@ -125,6 +136,9 @@ public sealed class MergeExecutor
 
     var state = MergeOutcome.Classify(merge, newPending.Count, newConflicts.Count, previewHadItems: target.PreviewItemCount > 0);
     if (!after.IsReliable && state is MergeTargetState.AppliedWithPendingChanges or MergeTargetState.NoApplicableChanges)
+      state = MergeTargetState.Indeterminate;
+    // AutoMerge (exit 1): só é aplicado se a ausência de conflitos foi confirmada.
+    if (merge.Status == TfStatus.PartialSuccess && !conflictsReadable && state == MergeTargetState.AppliedWithPendingChanges)
       state = MergeTargetState.Indeterminate;
     var conflictNote = merge.IsSuccess && !conflictsReadable && state == MergeTargetState.AppliedWithPendingChanges
       ? " Não foi possível confirmar a ausência de conflitos; verifique no Visual Studio."

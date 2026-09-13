@@ -41,6 +41,44 @@ public sealed class UnmatchedPendingTfvc(FakeTfvcClient inner) : DecoratedTfvc(i
   }
 }
 
+/// <summary>tf workfold assíncrono e lento: força concorrência real e mede o máximo de destinos simultâneos.</summary>
+public sealed class SlowWorkfoldTfvc(FakeTfvcClient inner) : DecoratedTfvc(inner)
+{
+  private int _inFlight;
+  private int _maxInFlight;
+
+  public int MaxInFlight => Volatile.Read(ref _maxInFlight);
+
+  public override async Task<WorkfoldQuery> GetWorkfoldAsync(string localPath, CancellationToken cancellationToken)
+  {
+    var current = Interlocked.Increment(ref _inFlight);
+    int observed;
+    while (current > (observed = Volatile.Read(ref _maxInFlight)) && Interlocked.CompareExchange(ref _maxInFlight, current, observed) != observed)
+    {
+    }
+
+    try
+    {
+      await Task.Delay(20, cancellationToken);
+      return await Inner.GetWorkfoldAsync(localPath, cancellationToken);
+    }
+    finally
+    {
+      Interlocked.Decrement(ref _inFlight);
+    }
+  }
+}
+
+/// <summary>Relógio controlado pelo teste.</summary>
+public sealed class ManualTimeProvider(DateTimeOffset now) : TimeProvider
+{
+  private DateTimeOffset _now = now;
+
+  public override DateTimeOffset GetUtcNow() => _now;
+
+  public void Advance(TimeSpan delta) => _now += delta;
+}
+
 /// <summary>Simula Ctrl+C logo após o primeiro merge concluir.</summary>
 public sealed class CancelAfterFirstMerge(FakeTfvcClient inner, CancellationTokenSource cancellation) : DecoratedTfvc(inner)
 {

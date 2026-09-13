@@ -12,23 +12,28 @@ namespace PEPCliHelper.Core.Merge;
 /// </summary>
 public sealed class MergePlanner
 {
+  /// <summary>Destinos avaliados ao mesmo tempo (somente consultas; o merge em si é sequencial).</summary>
+  public const int MaxParallelTargets = 4;
+
   private readonly ITfvcClient _tfvc;
   private readonly IFileSystem _fileSystem;
   private readonly MappingService _mapping;
   private readonly IExecutionJournal? _journal;
+  private readonly TimeProvider _time;
 
-  public MergePlanner(ITfvcClient tfvc, IFileSystem fileSystem, IExecutionJournal? journal)
+  public MergePlanner(ITfvcClient tfvc, IFileSystem fileSystem, IExecutionJournal? journal, TimeProvider? time = null)
   {
     _tfvc = tfvc;
     _fileSystem = fileSystem;
     _mapping = new MappingService(tfvc, fileSystem);
     _journal = journal;
+    _time = time ?? TimeProvider.System;
   }
 
   public async Task<MergePlan> PlanAsync(MergeRequest request, VersionCatalog catalog, string? collection, IOperationLog log, CancellationToken cancellationToken)
   {
     var source = catalog.Locate(request.Source, request.Project);
-    var plan = new MergePlan { Request = request, SourceLocation = source, Collection = collection };
+    var plan = new MergePlan { Request = request, SourceLocation = source, Collection = collection, CreatedAt = _time.GetUtcNow() };
     foreach (var target in request.Targets)
       plan.Targets.Add(new MergeTargetPlan { Location = catalog.Locate(target, request.Project) });
 
@@ -49,27 +54,57 @@ public sealed class MergePlanner
       return plan;
     }
 
-    foreach (var target in plan.Targets)
+    // Destinos avaliados em paralelo (no máximo MaxParallelTargets). Cada tarefa é iniciada diretamente,
+    // sem Task.Run: clientes que concluem de forma síncrona mantêm a ordem e o resultado determinísticos.
+    var previousRuns = LoadPreviousRuns(request);
+    var sharedLog = new SynchronizedOperationLog(log);
+    using var gate = new SemaphoreSlim(MaxParallelTargets);
+    var evaluations = plan.Targets
+      .Select(target => EvaluateWhenAllowedAsync(plan, target, gate, sharedLog, previousRuns, cancellationToken))
+      .ToList();
+    await Task.WhenAll(evaluations);
+
+    return plan;
+  }
+
+  /// <summary>Revalidação completa das condições críticas antes de aplicar o merge (spec 007): plano antigo.</summary>
+  public async Task<MergeTargetPlan> RevalidateAsync(MergePlan plan, MergeTargetPlan target, IOperationLog log, CancellationToken cancellationToken)
+  {
+    var fresh = new MergeTargetPlan { Location = target.Location };
+    await EvaluateTargetAsync(plan, fresh, log, [], cancellationToken, revalidation: true);
+    return fresh;
+  }
+
+  /// <summary>
+  /// Revalidação leve para plano recente: somente pending changes no escopo e arquivos graváveis sem checkout
+  /// (etapas 4–5). O tf status consultado fica em <see cref="MergeTargetPlan.PendingQuery"/> como estado "antes".
+  /// </summary>
+  public async Task<MergeTargetPlan> RevalidateLocalStateAsync(MergePlan plan, MergeTargetPlan target, IOperationLog log, CancellationToken cancellationToken)
+  {
+    var fresh = new MergeTargetPlan { Location = target.Location, Mapping = target.Mapping, IsLocalWorkspace = target.IsLocalWorkspace };
+    await CheckLocalStateAsync(plan, fresh, log, cancellationToken);
+    return fresh;
+  }
+
+  private async Task EvaluateWhenAllowedAsync(
+    MergePlan plan, MergeTargetPlan target, SemaphoreSlim gate, IOperationLog log, IReadOnlyList<ExecutionRecord> previousRuns, CancellationToken cancellationToken)
+  {
+    await gate.WaitAsync(cancellationToken);
+    try
     {
       cancellationToken.ThrowIfCancellationRequested();
       if (plan.EnvironmentFailure)
       {
         target.Block("Não avaliado: falha de rede/autenticação em destino anterior.");
-        continue;
+        return;
       }
 
-      await EvaluateTargetAsync(plan, target, log, cancellationToken);
+      await EvaluateTargetAsync(plan, target, log, previousRuns, cancellationToken);
     }
-
-    return plan;
-  }
-
-  /// <summary>Revalida as condições críticas imediatamente antes de aplicar o merge (spec 007).</summary>
-  public async Task<MergeTargetPlan> RevalidateAsync(MergePlan plan, MergeTargetPlan target, IOperationLog log, CancellationToken cancellationToken)
-  {
-    var fresh = new MergeTargetPlan { Location = target.Location };
-    await EvaluateTargetAsync(plan, fresh, log, cancellationToken, revalidation: true);
-    return fresh;
+    finally
+    {
+      gate.Release();
+    }
   }
 
   private async Task AnalyzeChangesetAsync(MergePlan plan, IOperationLog log, CancellationToken cancellationToken)
@@ -118,12 +153,12 @@ public sealed class MergePlanner
     plan.GlobalWarnings.Add("Dependências de changesets anteriores não são incluídas automaticamente; conflitos só são conhecidos na execução real.");
   }
 
-  private async Task EvaluateTargetAsync(MergePlan plan, MergeTargetPlan target, IOperationLog log, CancellationToken cancellationToken, bool revalidation = false)
+  private async Task EvaluateTargetAsync(
+    MergePlan plan, MergeTargetPlan target, IOperationLog log, IReadOnlyList<ExecutionRecord> previousRuns, CancellationToken cancellationToken, bool revalidation = false)
   {
     var request = plan.Request;
     var location = target.Location;
     var name = location.Version.Id;
-    var scope = plan.Scope!;
 
     // 1–2: pasta e mapeamento
     var (mapping, mappingQuery) = await _mapping.CheckAsync(location.LocalPath, location.ServerPath, name, log, cancellationToken);
@@ -169,56 +204,11 @@ public sealed class MergePlanner
       return;
     }
 
-    var targetFiles = scope.TargetLocalFiles(plan.SourceLocation.ServerPath, location.LocalPath);
-    var scopePaths = targetFiles
-      .Concat(scope.TargetServerItems(plan.SourceLocation.ServerPath, location.ServerPath))
-      .ToList();
-
-    // 4: pending changes preexistentes
-    log.Step(name, "Verificando pending changes");
-    var pending = await _tfvc.GetPendingChangesAsync(location.LocalPath, cancellationToken);
-    log.ToolResult(name, "tf status", pending.Result.ExitCode, pending.Result.StatusText, pending.Result.Duration, pending.Result.Output);
-    if (!pending.Result.IsSuccess)
-    {
-      if (pending.Result.IsEnvironmentError)
-        plan.EnvironmentFailure = true;
-      target.Block($"Não foi possível listar pending changes do destino; estado local desconhecido. tf: {pending.Result.Summary}");
+    // 4–5: pending changes preexistentes e alterações não reconciliadas
+    if (!await CheckLocalStateAsync(plan, target, log, cancellationToken))
       return;
-    }
 
-    if (pending.HasUnmatchedItems)
-    {
-      target.Block(
-        $"O tf status listou pending changes, mas nenhuma com o caminho '{location.LocalPath}' (subst, junction ou encoding). " +
-        "Estado local indeterminado: revise 'pep pending list' e o mapeamento antes do merge.");
-      return;
-    }
-
-    foreach (var line in pending.Items)
-      (MergeOutcome.IsInScope(line, scopePaths) ? target.PendingInScope : target.PendingOutOfScope).Add(line);
-
-    if (target.PendingInScope.Count > 0)
-      target.Block($"{target.PendingInScope.Count} pending change(s) atingem arquivos do changeset. Revise, faça check-in ou desfaça manualmente antes do merge; nada foi alterado.");
-    if (target.PendingOutOfScope.Count > 0)
-      target.Notes.Add($"{target.PendingOutOfScope.Count} pending change(s) fora do escopo do merge serão preservadas e não contadas como resultado.");
-
-    // 5: alterações não reconciliadas
-    if (target.IsLocalWorkspace)
-    {
-      target.Warnings.Add("Workspace local: adições/exclusões não detectadas pelo TFVC podem não aparecer. Revise o destino no Visual Studio se houver dúvida.");
-    }
-    else
-    {
-      foreach (var file in targetFiles)
-      {
-        if (_fileSystem.FileExists(file) && !_fileSystem.IsReadOnly(file)
-          && !pending.Items.Any(line => line.Contains(file, StringComparison.OrdinalIgnoreCase)))
-          target.UnreconciledFiles.Add(file);
-      }
-
-      if (target.UnreconciledFiles.Count > 0)
-        target.Block($"{target.UnreconciledFiles.Count} arquivo(s) do changeset estão graváveis sem checkout (possível alteração local não reconciliada). Nada será sobrescrito.");
-    }
+    var scopePaths = ScopePaths(plan, location);
 
     // 6: conflitos existentes
     log.Step(name, "Verificando conflitos existentes");
@@ -296,31 +286,120 @@ public sealed class MergePlanner
     }
 
     // 9: histórico local
-    foreach (var previous in PreviousRuns(request, name))
-      target.Notes.Add(previous);
+    foreach (var record in previousRuns)
+    {
+      var outcome = record.Targets.FirstOrDefault(t => t.Target.Equals(name, StringComparison.OrdinalIgnoreCase));
+      if (outcome is not null)
+        target.Notes.Add($"Execução anterior {record.Id} ({record.StartedAt:dd/MM HH:mm}): {outcome.State}.");
+    }
   }
 
-  private IEnumerable<string> PreviousRuns(MergeRequest request, string target)
+  /// <summary>
+  /// Etapas 4–5 (pending changes no escopo e arquivos graváveis sem checkout). Retorna false quando o estado local
+  /// não pôde ser lido com confiança e as etapas seguintes não devem rodar.
+  /// </summary>
+  private async Task<bool> CheckLocalStateAsync(MergePlan plan, MergeTargetPlan target, IOperationLog log, CancellationToken cancellationToken)
+  {
+    var location = target.Location;
+    var name = location.Version.Id;
+    var targetFiles = plan.Scope!.TargetLocalFiles(plan.SourceLocation.ServerPath, location.LocalPath);
+    var scopePaths = ScopePaths(plan, location);
+
+    // 4: pending changes preexistentes
+    log.Step(name, "Verificando pending changes");
+    var pending = await _tfvc.GetPendingChangesAsync(location.LocalPath, cancellationToken);
+    log.ToolResult(name, "tf status", pending.Result.ExitCode, pending.Result.StatusText, pending.Result.Duration, pending.Result.Output);
+    target.PendingQuery = pending;
+    if (!pending.Result.IsSuccess)
+    {
+      if (pending.Result.IsEnvironmentError)
+        plan.EnvironmentFailure = true;
+      target.Block($"Não foi possível listar pending changes do destino; estado local desconhecido. tf: {pending.Result.Summary}");
+      return false;
+    }
+
+    if (pending.HasUnmatchedItems)
+    {
+      target.Block(
+        $"O tf status listou pending changes, mas nenhuma com o caminho '{location.LocalPath}' (subst, junction ou encoding). " +
+        "Estado local indeterminado: revise 'pep pending list' e o mapeamento antes do merge.");
+      return false;
+    }
+
+    foreach (var line in pending.Items)
+      (MergeOutcome.IsInScope(line, scopePaths) ? target.PendingInScope : target.PendingOutOfScope).Add(line);
+
+    if (target.PendingInScope.Count > 0)
+      target.Block($"{target.PendingInScope.Count} pending change(s) atingem arquivos do changeset. Revise, faça check-in ou desfaça manualmente antes do merge; nada foi alterado.");
+    if (target.PendingOutOfScope.Count > 0)
+      target.Notes.Add($"{target.PendingOutOfScope.Count} pending change(s) fora do escopo do merge serão preservadas e não contadas como resultado.");
+
+    // 5: alterações não reconciliadas
+    if (target.IsLocalWorkspace)
+    {
+      target.Warnings.Add("Workspace local: adições/exclusões não detectadas pelo TFVC podem não aparecer. Revise o destino no Visual Studio se houver dúvida.");
+    }
+    else
+    {
+      foreach (var file in targetFiles)
+      {
+        if (_fileSystem.FileExists(file) && !_fileSystem.IsReadOnly(file)
+          && !pending.Items.Any(line => line.Contains(file, StringComparison.OrdinalIgnoreCase)))
+          target.UnreconciledFiles.Add(file);
+      }
+
+      if (target.UnreconciledFiles.Count > 0)
+        target.Block($"{target.UnreconciledFiles.Count} arquivo(s) do changeset estão graváveis sem checkout (possível alteração local não reconciliada). Nada será sobrescrito.");
+    }
+
+    return true;
+  }
+
+  private static List<string> ScopePaths(MergePlan plan, ProjectLocation location) =>
+    plan.Scope!.TargetLocalFiles(plan.SourceLocation.ServerPath, location.LocalPath)
+      .Concat(plan.Scope.TargetServerItems(plan.SourceLocation.ServerPath, location.ServerPath))
+      .ToList();
+
+  /// <summary>Histórico lido uma única vez por plano (não por destino).</summary>
+  private IReadOnlyList<ExecutionRecord> LoadPreviousRuns(MergeRequest request)
   {
     if (_journal is null)
-      yield break;
+      return [];
 
-    IReadOnlyList<ExecutionRecord> records;
     try
     {
-      records = _journal.List(200);
+      return _journal.List(200)
+        .Where(r => r.Command == "merge" && r.Changeset == request.Changeset
+          && string.Equals(r.Project, request.Project.Alias, StringComparison.OrdinalIgnoreCase))
+        .ToList();
     }
     catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
     {
-      yield break;
+      return [];
+    }
+  }
+
+  /// <summary>Serializa as chamadas de log vindas de destinos avaliados em paralelo.</summary>
+  private sealed class SynchronizedOperationLog(IOperationLog inner) : IOperationLog
+  {
+    private readonly object _gate = new();
+
+    public void Step(string target, string step)
+    {
+      lock (_gate)
+        inner.Step(target, step);
     }
 
-    foreach (var record in records.Where(r => r.Command == "merge" && r.Changeset == request.Changeset
-      && string.Equals(r.Project, request.Project.Alias, StringComparison.OrdinalIgnoreCase)))
+    public void ToolResult(string target, string step, int exitCode, string result, TimeSpan duration, string output)
     {
-      var outcome = record.Targets.FirstOrDefault(t => t.Target.Equals(target, StringComparison.OrdinalIgnoreCase));
-      if (outcome is not null)
-        yield return $"Execução anterior {record.Id} ({record.StartedAt:dd/MM HH:mm}): {outcome.State}.";
+      lock (_gate)
+        inner.ToolResult(target, step, exitCode, result, duration, output);
+    }
+
+    public void Output(string target, string line)
+    {
+      lock (_gate)
+        inner.Output(target, line);
     }
   }
 
