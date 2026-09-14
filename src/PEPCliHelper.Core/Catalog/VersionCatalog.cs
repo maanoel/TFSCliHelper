@@ -4,7 +4,8 @@ using PEPCliHelper.Core.Configuration;
 
 namespace PEPCliHelper.Core.Catalog;
 
-public sealed record ProjectDefinition(string Alias, string Name, string LocalFolder, string ServerFolder, string? Solution);
+/// <summary><paramref name="Principal"/>: compilado primeiro em cada versão (spec 009).</summary>
+public sealed record ProjectDefinition(string Alias, string Name, string LocalFolder, string ServerFolder, string? Solution, bool Principal = false);
 
 public sealed record VersionEntry(
   string Id,
@@ -41,6 +42,9 @@ public sealed partial class VersionCatalog
 {
   public const string CurrentToken = "atual";
 
+  /// <summary>Projeto principal quando nenhum está marcado (configurações anteriores ao campo "principal"): o PEP.</summary>
+  public const string DefaultPrincipalAlias = "back";
+
   private readonly List<VersionEntry> _versions;
   private readonly List<ProjectDefinition> _projects;
 
@@ -75,9 +79,13 @@ public sealed partial class VersionCatalog
       v.Aliases.Select(a => a.Trim()).Where(a => a.Length > 0).ToList(),
       string.IsNullOrWhiteSpace(v.Workspace) ? null : v.Workspace));
 
-    var projects = config.Projects.Select(p => new ProjectDefinition(p.Alias, p.Name, p.LocalFolder, p.ServerFolder, p.Solution));
+    var principalAlias = config.Projects.FirstOrDefault(p => p.Principal)?.Alias ?? DefaultPrincipalAlias;
+    var projects = config.Projects.Select(p => new ProjectDefinition(p.Alias, p.Name, p.LocalFolder, p.ServerFolder, p.Solution,
+      p.Alias.Equals(principalAlias, StringComparison.OrdinalIgnoreCase)));
     return new VersionCatalog(versions, projects);
   }
+
+  public ProjectDefinition? Principal => _projects.FirstOrDefault(p => p.Principal);
 
   /// <summary>
   /// Resolve por id exato, alias exato ou último segmento numérico exato ("2606" → "12.1.2606").

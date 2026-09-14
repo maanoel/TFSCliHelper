@@ -82,6 +82,25 @@ public sealed class ConfigInitChain : ICommandChain
   public ICommandBuilder CreateBuilder(AppServices services) => new ConfigInitBuilder(services);
 }
 
+public sealed class ConfigAutoChain : ICommandChain
+{
+  public CommandHelp Help { get; } = new()
+  {
+    Path = ["config", "auto"],
+    Category = "Ambientes e configuração",
+    Summary = "Configuração automática: <raiz>\\Atual\\Release como atual e as 4 legadas mais novas de <raiz>\\Legado ativas.",
+    Details = "Legadas ordenadas pelo número da versão; as mais antigas ficam desativadas. Caminhos TFVC pela convenção, sem consultar o servidor "
+      + "(confirme com 'pep env validate'). Mantém coleção, ferramentas e projetos; faz backup do arquivo anterior. Não cria, move nem exclui pastas.",
+    Examples =
+    [
+      new("pep config auto", "Mostra a proposta e grava após Enter."),
+      new("pep config auto --yes", "Grava sem perguntar."),
+    ],
+  };
+
+  public ICommandBuilder CreateBuilder(AppServices services) => new ConfigAutoBuilder(services);
+}
+
 public sealed class ConfigShowChain : ICommandChain
 {
   public CommandHelp Help { get; } = new()

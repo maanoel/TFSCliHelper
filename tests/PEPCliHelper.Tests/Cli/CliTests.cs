@@ -134,6 +134,64 @@ public class CommandParsingTests
 public class CliBehaviorTests
 {
   [Fact]
+  public async Task Build_VersaoEProjetoBackDryRun_PlanoSomenteComRmPepSln()
+  {
+    var cli = new CliHarness();
+
+    await cli.RunAsync("build", "--version", "2606", "--project", "back", "--dry-run", "--json");
+
+    using var json = JsonDocument.Parse(cli.Text);
+    var targets = json.RootElement.GetProperty("plano").GetProperty("alvos").EnumerateArray().ToList();
+    var target = Assert.Single(targets);
+    Assert.Equal("12.1.2606", target.GetProperty("versao").GetString());
+    Assert.Equal("RM.Pep.sln", Path.GetFileName(target.GetProperty("solucao").GetString()));
+  }
+
+  [Fact]
+  public async Task Build_TodasDryRun_PepAntesDoSaudeEmCadaVersao()
+  {
+    var cli = new CliHarness();
+
+    await cli.RunAsync("build", "--all", "--dry-run", "--json");
+
+    using var json = JsonDocument.Parse(cli.Text);
+    var order = json.RootElement.GetProperty("plano").GetProperty("alvos").EnumerateArray()
+      .Select(t => $"{t.GetProperty("versao").GetString()}:{t.GetProperty("projeto").GetString()}");
+    Assert.Equal(["12.1.2610:back", "12.1.2610:sau", "12.1.2606:back", "12.1.2606:sau", "12.1.2602:back", "12.1.2602:sau"], order);
+  }
+
+  [Fact]
+  public async Task Build_NaoInterativoSemVersoes_ErroDeUso()
+  {
+    var cli = new CliHarness();
+
+    var exit = await cli.RunAsync("build", "--non-interactive");
+
+    Assert.Equal(ExitCodes.Usage, exit);
+    Assert.Contains("--all", cli.Text);
+  }
+
+  [Fact]
+  public async Task Build_AllComVersion_ErroDeUso()
+  {
+    var cli = new CliHarness();
+
+    var exit = await cli.RunAsync("build", "--all", "--version", "2606", "--dry-run");
+
+    Assert.Equal(ExitCodes.Usage, exit);
+  }
+
+  [Fact]
+  public void GlobalOptions_VersionDepoisDoComando_FicaParaOComando()
+  {
+    var (options, tokens) = GlobalOptions.Parse(["build", "--version", "2606"], _ => null);
+
+    Assert.False(options.ShowVersion);
+    Assert.Equal(["build", "--version", "2606"], tokens);
+    Assert.True(GlobalOptions.Parse(["--version"], _ => null).Options.ShowVersion);
+  }
+
+  [Fact]
   public async Task Merge_NaoInterativoSemChangeset_ErroDeUsoSemAguardarEntrada()
   {
     var cli = new CliHarness();

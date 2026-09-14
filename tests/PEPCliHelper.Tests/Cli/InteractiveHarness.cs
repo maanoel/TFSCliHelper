@@ -18,10 +18,17 @@ internal sealed class InteractiveHarness : IDisposable
   public const string ConfigPath = @"C:\cfg\config.json";
 
   public InteractiveHarness(params string[] targets)
+    : this(withConfig: true, targets)
+  {
+  }
+
+  /// <summary><paramref name="withConfig"/> = false simula a primeira execução (sem arquivo de configuração).</summary>
+  public InteractiveHarness(bool withConfig, params string[] targets)
   {
     Tfvc = TestData.HealthyTfvc(FileSystem, targets.Length == 0 ? ["12.1.2606", "12.1.2602"] : targets);
-    new ConfigStore(FileSystem, ConfigPath).Save(TestData.Config());
-    FileSystem.AddFile(TfExePath);
+    if (withConfig)
+      new ConfigStore(FileSystem, ConfigPath).Save(TestData.Config());
+    FileSystem.AddFile(TfExePath).AddFile(MsBuildPath);
     Console = new TestConsole().Interactive().Width(200);
     Console.EmitAnsiSequences = false;
   }
@@ -33,6 +40,11 @@ internal sealed class InteractiveHarness : IDisposable
   public FakeProcessInspector Processes { get; } = new();
 
   public const string TfExePath = @"C:\tf\TF.exe";
+
+  public const string MsBuildPath = @"C:\vs\MSBuild.exe";
+
+  /// <summary>Processos externos (MSBuild) executados pelos comandos.</summary>
+  public FakeCommandExecutor Executor { get; } = new();
 
   public FakeAttachedRunner Attached { get; } = new();
 
@@ -100,11 +112,10 @@ internal sealed class InteractiveHarness : IDisposable
     };
     var output = new StringWriter();
     var ui = new Ui(Console, effective, canPrompt: true, output);
-    var executor = new FakeCommandExecutor();
-    return new AppServices(effective, ui, FileSystem, executor, Processes, TimeProvider.System,
+    return new AppServices(effective, ui, FileSystem, Executor, Processes, TimeProvider.System,
       new ConfigStore(FileSystem, ConfigPath), new JsonExecutionJournal(FileSystem, @"C:\hist", TimeProvider.System),
       _ => Tfvc,
-      _ => new ToolLocator(FileSystem, executor, new ToolsConfig { TfExe = TfExePath }, @"C:\sem\vswhere.exe"),
+      _ => new ToolLocator(FileSystem, Executor, new ToolsConfig { TfExe = TfExePath, MsBuild = MsBuildPath }, @"C:\sem\vswhere.exe"),
       Attached);
   }
 }

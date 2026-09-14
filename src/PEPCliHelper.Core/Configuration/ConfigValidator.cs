@@ -63,6 +63,10 @@ public static partial class ConfigValidator
       if (project.Solution is not null && !IsSafeRelative(project.Solution))
         errors.Add($"{where}.solucao: informe caminho relativo à pasta do projeto, sem '..'.");
     }
+
+    var principals = config.Projects.Where(p => p.Principal).ToList();
+    if (principals.Count > 1)
+      errors.Add($"projetos: {principals.Count} projetos marcados como principal ({string.Join(", ", principals.Select(p => p.Alias))}); apenas um é permitido.");
   }
 
   private static void ValidateVersions(PepConfig config, List<string> errors)

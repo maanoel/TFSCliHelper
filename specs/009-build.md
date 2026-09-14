@@ -8,13 +8,19 @@ O build atual usa caminho fixo do MSBuild do VS 2022 Professional, mata o `rm.ho
 
 ## Comando
 ```
-pep build all [--project back|sau] [--configuration <cfg>] [--continue-on-failure] [--dry-run] [--yes] [--json]
-pep build version <versao> [...]
+pep build [--version <versao>]... | [--all] [--project <alias>]... [--configuration <cfg>] [--continue-on-failure] [--dry-run] [--yes] [--json]
+pep build all [--project <alias>]... [...]
+pep build version <versao> [--project <alias>]... [...]
 ```
 
 ## Regras
 - Ferramenta real: **MSBuild** do Visual Studio (legado usava `msbuild <sln>`). Não substituir por `dotnet build`.
-- Soluções: `Sau-Saude\Sau-Saude.sln` e `Sau-PEP\RM.Pep.sln`. Ordem = ordem dos projetos na config (default: sau, depois back — ordem do legado).
+- Soluções: `Sau-PEP\RM.Pep.sln` (PEP, `back`) e `Sau-Saude\Sau-Saude.sln` (Saúde, `sau`).
+- **Decisão do usuário (2026-09-14):** o usuário seleciona versões e projetos; o PEP pode ser compilado separado do Saúde; o projeto **principal** (PEP) compila sempre primeiro. Substitui a ordem legada "sau depois back".
+- Ordem: versões atual → legadas (catálogo); em cada versão, o principal primeiro e os demais selecionados na ordem da config (`BuildOrder`, Core).
+- Principal: campo `principal` do projeto (no máximo um). Sem nenhum marcado, `back` é o principal (único default, em `VersionCatalog.FromConfig`); a config não é reescrita.
+- `pep build` sem `--version`/`--all`: interativo pergunta versões (atual marcada) e projetos (todos marcados); nada marcado = cancelado (130). Não interativo ⇒ exit 2. `--all` com `--version` ⇒ exit 2.
+- Menu "Build (MSBuild)" despacha `pep build` / `pep build --dry-run`.
 - Configuração: default do projeto; `--configuration` repassa `/p:Configuration=<cfg>`.
 - Argumentos: `<sln> /nologo /verbosity:minimal`. Sem `/m` por padrão (saídas compartilhadas em `Bin`).
 - Sequencial sempre; nunca paralelo entre versões.
@@ -28,6 +34,8 @@ pep build version <versao> [...]
 - **Dado** host da versão em execução **Quando** `build version atual` **Então** bloqueia e orienta, sem encerrar processo.
 - **Dado** primeira solução falha **Quando** build all **Então** demais não iniciadas, exit 4.
 - **Dado** MSBuild ausente **Quando** build **Então** erro de ferramenta ausente, exit 3.
+- **Dado** config legada com `sau` antes de `back` **Quando** build de todos os projetos **Então** `RM.Pep.sln` antes de `Sau-Saude.sln` em cada versão.
+- **Dado** seleção só de `sau` **Quando** build **Então** compila apenas `Sau-Saude.sln`.
 
 ## Fora de escopo
 - Restore NuGet explícito; build de front.
@@ -39,6 +47,7 @@ Nenhuma.
 - [x] Localizador MSBuild
 - [x] BuildUseCase
 - [x] Chains `build all` / `build version`
+- [x] `pep build` com seleção de versões/projetos e projeto principal primeiro (2026-09-14)
 
 ## Verificação
 Ver `docs/HOMOLOGACAO.md`.

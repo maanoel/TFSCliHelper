@@ -10,7 +10,22 @@
 2. configuração do usuário — variável `PEPCLI_CONFIG` ou o arquivo acima;
 3. defaults seguros — criados por `pep config init`.
 
-Nada é criado silenciosamente: sem arquivo, os comandos param e orientam `pep config init`.
+Nada é criado silenciosamente: sem arquivo, os comandos param e orientam `pep config auto` (ou `pep config init`). No menu interativo, a primeira execução oferece a configuração automática e só grava após a escolha do usuário.
+
+## Configuração automática
+
+`pep config auto` — ou a tela **Primeira configuração** ao abrir `pep` sem configuração (ou sem versão atual) — monta o catálogo pela convenção de pastas:
+
+- **Atual:** `<raizLocal>\Atual\Release` (id `atual`, sem aliases). Se a pasta não existe, nada é gravado e a configuração manual (`pep env configure`) é oferecida.
+- **Legadas:** subpastas de `<raizLocal>\Legado` com nome de versão numérica (`12.1.2606`, até 4 segmentos). Outras pastas (`backup`, `12.1.2606-old`) são ignoradas e listadas.
+- **Ordem numérica** por segmento (`System.Version`), não alfabética: `12.1.2606 > 12.1.2602 > 12.1.2510`; `12.1.34 < 12.1.2306`.
+- As **4 mais novas ficam ativas**; as mais antigas entram com `"ativa": false` (visíveis em `env list`, disponíveis para rotação). Nenhuma pasta é criada, movida ou excluída.
+- Id da legada = nome da pasta; alias = último segmento (`2606`). `caminhoLocal` relativo (`Legado\12.1.2606`).
+- `caminhoServidor` pela convenção `<raizServidor>/<pasta relativa>`, **sem consultar o TFVC** — confirme com `pep env validate`.
+- Preserva coleção, ferramentas, projetos, arquivos locais, apresentação e `raizServidor`; mantém o `workspace` de versões já cadastradas (mesmo id ou mesma pasta). Versões antigas sem pasta correspondente permanecem, desativadas.
+- Pasta de versão sem nenhum projeto configurado entra com aviso "sem projetos".
+- Arquivo existente **inválido** nunca é sobrescrito: corrija-o ou use `pep config init --force`.
+- Grava com backup (`config.json.<data>.bak`) após confirmação (Enter aceita; `--yes` em scripts).
 
 ## Modelo
 
@@ -39,8 +54,8 @@ Nada é criado silenciosamente: sem arquivo, os comandos param e orientam `pep c
       "caminhoServidor": "$/Linha-RM/Legado/12.1.2606", "aliases": ["2606"], "workspace": null }
   ],
   "projetos": [
-    { "alias": "sau",  "nome": "Sau-Saude", "pastaLocal": "Sau-Saude", "pastaServidor": "Sau-Saude", "solucao": "Sau-Saude.sln" },
-    { "alias": "back", "nome": "Sau-PEP",   "pastaLocal": "Sau-PEP",   "pastaServidor": "Sau-PEP",   "solucao": "RM.Pep.sln" }
+    { "alias": "back", "nome": "Sau-PEP",   "pastaLocal": "Sau-PEP",   "pastaServidor": "Sau-PEP",   "solucao": "RM.Pep.sln",    "principal": true },
+    { "alias": "sau",  "nome": "Sau-Saude", "pastaLocal": "Sau-Saude", "pastaServidor": "Sau-Saude", "solucao": "Sau-Saude.sln", "principal": false }
   ],
   "arquivosLocais": {
     "broker": "Bin\\_Broker.dat", "host": "Bin\\RM.Host.exe", "rm": "Bin\\RM.exe",
@@ -50,7 +65,8 @@ Nada é criado silenciosamente: sem arquivo, os comandos param e orientam `pep c
 }
 ```
 
-A ordem de `projetos` é a ordem do build.
+Ordem do build: em cada versão, o projeto com `"principal": true` (no máximo um; o validador rejeita dois) compila primeiro; os demais seguem a ordem de `projetos`.
+Configurações antigas sem nenhum `principal` tratam `back` (Sau-PEP) como principal — a ordem salva no arquivo não é alterada (nem pelo `config auto`).
 
 ### Convenção de caminho TFVC
 

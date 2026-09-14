@@ -1,6 +1,7 @@
 using System.Text.Json;
 using PEPCliHelper.Core.Common;
 using PEPCliHelper.Core.Configuration;
+using PEPCliHelper.Core.Environments;
 using PEPCliHelper.Infrastructure;
 using PEPCliHelper.Presentation;
 using Spectre.Console;
@@ -129,6 +130,131 @@ public sealed class ConfigShowBuilder : CommandBuilderBase
 
     return Task.FromResult(load.Status == ConfigLoadStatus.Loaded ? ExitCodes.Success : ExitCodes.Usage);
   }
+}
+
+/// <summary>
+/// pep config auto (spec 004, decisão de 2026-09-14): detecta Atual\Release e as legadas em Legado pela convenção de pastas,
+/// mostra a proposta e grava com confirmação (Enter aceita). Não consulta o TFVC.
+/// </summary>
+public sealed class ConfigAutoBuilder : CommandBuilderBase
+{
+  public ConfigAutoBuilder(AppServices services)
+    : base(services)
+  {
+  }
+
+  public override async Task<int> BuildAsync(CommandLine line, CancellationToken cancellationToken)
+  {
+    var (baseConfig, _) = LoadBase(Services);
+    var proposal = new AutoConfigurator(Services.FileSystem).Propose(baseConfig);
+
+    if (!proposal.CanApply)
+    {
+      throw new PreconditionException(
+        "Configuração automática indisponível: " + string.Join(" | ", proposal.Errors),
+        "Confira a raiz local em 'pep config show' ou configure manualmente com 'pep env configure'.",
+        Path.Combine(baseConfig.LocalRoot, AutoConfigurator.CurrentFolder, AutoConfigurator.CurrentRelease));
+    }
+
+    Render(Ui, proposal);
+    if (!await ConfirmAsync("Aplicar esta configuração?", cancellationToken, defaultValue: true))
+    {
+      Ui.Warn("Nada foi gravado.");
+      return ExitCodes.Cancelled;
+    }
+
+    var backup = Apply(Services, proposal);
+    if (Ui.Json)
+      Ui.WriteJson(ToJson(Services.ConfigStore.Path, backup, proposal));
+    else
+      RenderApplied(Services, proposal, backup);
+
+    return ExitCodes.Success;
+  }
+
+  /// <summary>Configuração existente e válida, ou os defaults quando não há arquivo. Arquivo inválido nunca é sobrescrito.</summary>
+  internal static (PepConfig Config, ConfigLoadStatus Status) LoadBase(AppServices services)
+  {
+    var load = services.LoadConfig();
+    return load.Status switch
+    {
+      ConfigLoadStatus.Loaded => (load.Config!, load.Status),
+      ConfigLoadStatus.Missing => (PepConfig.CreateDefault(), load.Status),
+      _ => throw new UsageException(
+        "A configuração existente é inválida e não será sobrescrita automaticamente: " + string.Join(" | ", load.Errors),
+        "Corrija o arquivo (veja 'pep config validate') ou recrie com 'pep config init --force' (um backup será criado) e execute 'pep config auto' novamente.",
+        load.Path),
+    };
+  }
+
+  internal static string? Apply(AppServices services, AutoConfigProposal proposal)
+  {
+    var backup = services.ConfigStore.Save(proposal.Config);
+    services.InvalidateConfig();
+    return backup;
+  }
+
+  internal static void Render(Ui ui, AutoConfigProposal proposal)
+  {
+    var table = ui.NewTable("Versão", "Tipo", "Situação", "Pasta local", "Caminho TFVC", "Projetos");
+    foreach (var v in proposal.Versions)
+    {
+      table.AddRow(
+        new Markup($"[bold]{Ui.Escape(v.Id)}[/]"),
+        new Markup(v.IsCurrent ? $"[{ui.Theme.Accent}]atual[/]" : "legada"),
+        new Markup(v.Active ? ui.Theme.State(StateKind.Ok, "ativa") : ui.Theme.State(StateKind.Neutral, "desativada")),
+        new Markup(Ui.Escape(v.Folder)),
+        new Markup(Ui.Escape(v.ServerPath)),
+        new Markup(v.HasProjects ? Ui.Escape(string.Join(", ", v.ProjectsFound)) : ui.Theme.State(StateKind.Warn, "sem projetos")));
+    }
+
+    if (proposal.Versions.Count > 0)
+      ui.Write(table);
+
+    foreach (var ignored in proposal.Ignored)
+      ui.Muted($"  Ignorada: {ignored.Folder} ({ignored.Reason})");
+    foreach (var warning in proposal.Warnings)
+      ui.Warn(warning);
+    foreach (var error in proposal.Errors)
+      ui.Fail(error);
+
+    ui.Muted("  Caminhos TFVC pela convenção da pasta, sem consultar o servidor. Nenhuma pasta é criada, movida ou excluída.");
+  }
+
+  internal static void RenderApplied(AppServices services, AutoConfigProposal proposal, string? backup)
+  {
+    var ui = services.Ui;
+    ui.Success($"Configuração gravada: {services.ConfigStore.Path}");
+    if (backup is not null)
+      ui.Muted($"  Backup da anterior: {backup}");
+    ui.Muted($"  Atual + {proposal.ActiveLegacy.Count} legada(s) ativa(s)" + (proposal.InactiveLegacy.Count > 0 ? $", {proposal.InactiveLegacy.Count} desativada(s)." : "."));
+    ui.Title("Próximos passos");
+    ui.Hint("pep login           autentica o tf.exe (se ainda não fez)");
+    ui.Hint("pep doctor          valida ferramentas e conexão");
+    ui.Hint("pep env validate    confirma os mapeamentos TFVC das versões ativas");
+  }
+
+  private static object ToJson(string path, string? backup, AutoConfigProposal proposal) => new
+  {
+    gravado = true,
+    arquivo = path,
+    backup,
+    atual = proposal.Current?.Id,
+    legadasAtivas = proposal.ActiveLegacy.Select(v => v.Id),
+    legadasDesativadas = proposal.InactiveLegacy.Select(v => v.Id),
+    versoes = proposal.Versions.Select(v => new
+    {
+      id = v.Id,
+      atual = v.IsCurrent,
+      ativa = v.Active,
+      pasta = v.Folder,
+      caminhoLocal = v.LocalPath,
+      caminhoServidor = v.ServerPath,
+      projetos = v.ProjectsFound,
+    }),
+    ignoradas = proposal.Ignored.Select(i => new { pasta = i.Folder, motivo = i.Reason }),
+    avisos = proposal.Warnings,
+  };
 }
 
 /// <summary>pep config validate (spec 003).</summary>

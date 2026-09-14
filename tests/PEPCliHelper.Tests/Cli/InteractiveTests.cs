@@ -6,8 +6,8 @@ namespace PEPCliHelper.Tests.Cli;
 /// <summary>Fluxos guiados por prompts (spec 002): seleção, multisseleção, confirmação, cancelamento e menu.</summary>
 public class InteractiveTests
 {
-  // Ordem dos prompts do merge: projeto (sau, back), origem (atual, 2606, 2602), destinos (sem a origem), changeset, confirmação.
-  private const int ProjectBack = 1;
+  // Ordem dos prompts do merge: projeto (back, sau), origem (atual, 2606, 2602), destinos (sem a origem), changeset, confirmação.
+  private const int ProjectBack = 0;
   private const int SourceCurrent = 0;
 
   [Fact]
@@ -132,6 +132,63 @@ public class InteractiveTests
 
     Assert.Equal(ExitCodes.Precondition, exit);
     Assert.Contains("ainda não acessa", cli.Text);
+  }
+
+  private static InteractiveHarness BuildReady()
+  {
+    var cli = new InteractiveHarness();
+    cli.FileSystem.AddFile(@"C:\LR\Atual\Release\Sau-PEP\RM.Pep.sln").AddFile(@"C:\LR\Atual\Release\Sau-Saude\Sau-Saude.sln");
+    return cli;
+  }
+
+  [Fact]
+  public async Task Build_AtualETodosProjetosPreSelecionados_CompilaPepAntesDoSaude()
+  {
+    using var cli = BuildReady();
+    cli.MultiSelect().MultiSelect().Type("y");
+
+    var exit = await cli.RunAsync("build");
+
+    Assert.Equal(ExitCodes.Success, exit);
+    Assert.All(cli.Executor.Executed, c => Assert.Equal(InteractiveHarness.MsBuildPath, c.FileName));
+    Assert.Equal(["RM.Pep.sln", "Sau-Saude.sln"], cli.Executor.Executed.Select(c => Path.GetFileName(c.Arguments[0])));
+  }
+
+  [Fact]
+  public async Task Build_DesmarcaPep_CompilaSomenteSaude()
+  {
+    using var cli = BuildReady();
+    cli.MultiSelect().MultiSelect(0).Type("y");
+
+    var exit = await cli.RunAsync("build");
+
+    Assert.Equal(ExitCodes.Success, exit);
+    Assert.Equal(["Sau-Saude.sln"], cli.Executor.Executed.Select(c => Path.GetFileName(c.Arguments[0])));
+  }
+
+  [Fact]
+  public async Task Build_DesmarcaVersaoAtual_CanceladoSemMsBuild()
+  {
+    using var cli = BuildReady();
+    cli.MultiSelect(0);
+
+    var exit = await cli.RunAsync("build");
+
+    Assert.Equal(ExitCodes.Cancelled, exit);
+    Assert.Empty(cli.Executor.Executed);
+  }
+
+  [Fact]
+  public async Task Menu_BuildSimularComSelecao_MostraPlanoSemMsBuild()
+  {
+    using var cli = BuildReady();
+    cli.Select(2).Select(1).MultiSelect().MultiSelect().SelectLast();
+
+    var exit = await cli.RunMenuAsync();
+
+    Assert.Equal(ExitCodes.Success, exit);
+    Assert.Empty(cli.Executor.Executed);
+    Assert.Contains("Plano de build (dry-run)", cli.Text);
   }
 
   [Fact]

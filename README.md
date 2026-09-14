@@ -23,7 +23,8 @@ CLI da equipe PEP RM para **propagar changesets TFVC entre versões em um único
 | Simular antes | o mesmo comando com `--dry-run` |
 | Ser guiado passo a passo | `pep` (menu) ou `pep merge` |
 | Atualizar todas as versões | `pep get all` |
-| Compilar uma versão | `pep build version 2606` |
+| Escolher versões e projetos para compilar (PEP sempre primeiro) | `pep build` |
+| Compilar só o PEP da 2606 | `pep build --version 2606 --project back` |
 | Saber por que algo falhou | `pep doctor` |
 
 Escopo: somente backend — `back` (Sau-PEP) e `sau` (Sau-Saude). O front do PEP está no Git e não é gerenciado por este CLI.
@@ -47,6 +48,14 @@ Escopo: somente backend — `back` (Sau-PEP) e `sau` (Sau-Saude). O front do PEP
 Detalhes, modo silencioso e desinstalação em [docs/DISTRIBUICAO.md](docs/DISTRIBUICAO.md). A instalação manual (`scripts/publish.ps1` + PATH) continua disponível.
 
 ## Primeiros passos
+
+1. Abra o terminal e digite `pep`.
+2. Na tela **Primeira configuração**, confira a tabela e pressione **Enter** em *Aplicar configuração automática (recomendado)*.
+   A atual é `C:\Linha-RM\Atual\Release`; as 4 versões mais novas de `C:\Linha-RM\Legado` ficam ativas e as mais antigas, desativadas.
+3. `pep login` para autenticar o tf.exe.
+4. Pronto. Opcional: `pep doctor` e `pep env validate` confirmam ferramentas e mapeamentos TFVC.
+
+Por argumentos: `pep config auto` (ou `pep config auto --yes`). Configuração manual continua disponível:
 
 ```powershell
 pep config init        # cria %APPDATA%\PepCli\config.json com defaults seguros
@@ -78,6 +87,7 @@ pep merge --project back --source atual --target 2606 --changeset 861799 --yes -
 pep get all
 pep get version 2606 --project back
 pep build all --configuration Release
+pep build --version atual --version 2606 --project sau --dry-run
 pep pending list 2606
 pep changeset show 861799 --project back --source atual
 pep kill host --pid 12345

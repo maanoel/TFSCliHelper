@@ -175,7 +175,8 @@ public sealed class Ui
       : selected.Value!;
   }
 
-  public async Task<List<T>> MultiSelectAsync<T>(string title, IEnumerable<T> items, Func<T, string> label, CancellationToken cancellationToken)
+  /// <param name="preselected">Itens que já aparecem marcados.</param>
+  public async Task<List<T>> MultiSelectAsync<T>(string title, IEnumerable<T> items, Func<T, string> label, CancellationToken cancellationToken, IEnumerable<T>? preselected = null)
     where T : notnull
   {
     EnsureCanPrompt(title);
@@ -187,6 +188,8 @@ public sealed class Ui
       .InstructionsText($"[{Theme.Muted}](Espaço marca/desmarca, Enter confirma, nada marcado cancela)[/]")
       .UseConverter(item => Escape(label(item)))
       .AddChoices(items);
+    foreach (var item in preselected ?? [])
+      prompt.Select(item);
     return await prompt.ShowAsync(Console, cancellationToken);
   }
 

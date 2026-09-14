@@ -29,6 +29,13 @@ pep env validate [--json]          valida pastas e mapeamentos TFVC do catálogo
 - Gravação exige revisão da tabela final e confirmação; backup do arquivo anterior.
 - Versões desativadas ficam no arquivo (`ativa: false`) e deixam de participar de operações `all`.
 
+## Decisão do usuário — 2026-09-14: configuração automática
+- O setup inicial tinha passos demais. Ao abrir `pep` sem configuração (ou sem versão atual), o menu mostra a proposta automática; Enter em "Aplicar configuração automática (recomendado)" grava (a seleção é a confirmação). Também disponível como `pep config auto [--yes]` e no submenu "Ambientes e versões".
+- Convenção: atual sempre em `<raiz>\Atual\Release` (id `atual`); legadas são pastas numeradas em `<raiz>\Legado`.
+- **No modo automático**, as 4 legadas mais novas por **ordem numérica de versão** ficam ativas e as mais antigas são cadastradas desativadas. Isso substitui, apenas para esse modo, a regra "não ordena para escolher" acima.
+- Caminhos TFVC pela convenção, sem consultar o servidor; validação posterior com `env validate`. Configuração inválida nunca é sobrescrita.
+- `env configure` manual permanece para rotação e casos fora da convenção.
+
 ## Cenários de aceite
 - **Dado** 10 pastas legadas **Quando** `env discover` **Então** lista todas como candidatas sem alterar nada.
 - **Dado** `env configure` com 5 legadas marcadas **Quando** confirmar **Então** é recusado com mensagem do limite.

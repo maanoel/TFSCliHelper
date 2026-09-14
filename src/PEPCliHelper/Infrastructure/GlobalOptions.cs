@@ -35,7 +35,7 @@ public sealed class GlobalOptions
   public static readonly IReadOnlyList<(string Name, string? Value, string Description)> Descriptions =
   [
     ("--help, -h", null, "Ajuda do comando."),
-    ("--version", null, "Mostra a versão do PEP CLI."),
+    ("--version", null, "Mostra a versão do PEP CLI (antes de qualquer comando)."),
     ("--json", null, "Saída JSON sem cores, animações ou prompts (implica --non-interactive)."),
     ("--non-interactive", null, "Nunca pergunta; entrada ausente gera erro de uso."),
     ("--yes, -y", null, "Confirma um plano completamente especificado (não ignora validações)."),
@@ -64,7 +64,8 @@ public sealed class GlobalOptions
         case "--yes" or "-y": yes = true; break;
         case "--verbose": verbose = true; break;
         case "--help" or "-h" or "/?": help = true; break;
-        case "--version": version = true; break;
+        // Global só antes do comando: em 'pep build --version 2606' é opção do comando.
+        case "--version" when tokens.Count == 0: version = true; break;
         case "--config":
           if (i + 1 >= args.Count || args[i + 1].StartsWith("--", StringComparison.Ordinal))
             throw new UsageException("A opção --config exige o caminho do arquivo.", "Ex.: pep doctor --config \"D:\\configs\\pep.json\"");

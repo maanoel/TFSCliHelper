@@ -63,7 +63,7 @@ public abstract class CommandBuilderBase : ICommandBuilder
       : throw new UsageException($"Informe {description}.", $"Uso: {line.Help.Usage}. Veja 'pep {line.Help.Name} --help'.");
 
   /// <summary>--yes confirma; em terminal interativo pergunta; em modo não interativo exige --yes.</summary>
-  protected async Task<bool> ConfirmAsync(string question, CancellationToken cancellationToken)
+  protected async Task<bool> ConfirmAsync(string question, CancellationToken cancellationToken, bool defaultValue = false)
   {
     if (Services.Options.Yes)
       return true;
@@ -75,7 +75,7 @@ public abstract class CommandBuilderBase : ICommandBuilder
         "Revise o plano (use --dry-run) e repita com --yes para confirmar.");
     }
 
-    return await Ui.ConfirmAsync(question, defaultValue: false, cancellationToken);
+    return await Ui.ConfirmAsync(question, defaultValue, cancellationToken);
   }
 
   protected ExecutionSession BeginHistory(string command, CommandLine line)

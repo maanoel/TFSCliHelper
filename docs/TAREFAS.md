@@ -57,4 +57,5 @@ Legenda: ✅ concluída · 🔄 em andamento · ⏳ a fazer · ⛔ bloqueada · 
 | ✅ C12 | 142 testes xUnit |
 | ✅ C13 | Revisão de segurança independente e correções |
 | ✅ C14 | Publicação `pep.exe` validada |
+| ✅ C16 | Configuração automática (2026-09-14): `pep config auto`, tela de primeira execução no menu e opção em "Ambientes e versões" — Atual\Release + 4 legadas mais novas ativas (ordem numérica), sem TFVC |
 | ✅ C15 | Instalador `PEPCLI-Setup` (janela única, por usuário, modo silencioso, 34 testes) + ícone CLI `assets/pep-cli.ico` |

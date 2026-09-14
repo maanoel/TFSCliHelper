@@ -44,8 +44,8 @@ public sealed class PepConfig
     Collection = DefaultCollection,
     Projects =
     [
+      new ProjectConfig { Alias = "back", Name = "Sau-PEP", LocalFolder = "Sau-PEP", ServerFolder = "Sau-PEP", Solution = "RM.Pep.sln", Principal = true },
       new ProjectConfig { Alias = "sau", Name = "Sau-Saude", LocalFolder = "Sau-Saude", ServerFolder = "Sau-Saude", Solution = "Sau-Saude.sln" },
-      new ProjectConfig { Alias = "back", Name = "Sau-PEP", LocalFolder = "Sau-PEP", ServerFolder = "Sau-PEP", Solution = "RM.Pep.sln" },
     ],
   };
 }
@@ -104,6 +104,10 @@ public sealed class ProjectConfig
   /// <summary>Solução relativa à pasta do projeto.</summary>
   [JsonPropertyName("solucao")]
   public string? Solution { get; set; }
+
+  /// <summary>Projeto principal (no máximo um): compilado primeiro em cada versão (spec 009).</summary>
+  [JsonPropertyName("principal")]
+  public bool Principal { get; set; }
 }
 
 /// <summary>Arquivos do RM relativos à pasta da versão.</summary>

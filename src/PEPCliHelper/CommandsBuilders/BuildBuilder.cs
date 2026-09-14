@@ -1,3 +1,5 @@
+using PEPCliHelper.Core.Build;
+using PEPCliHelper.Core.Catalog;
 using PEPCliHelper.Core.Common;
 using PEPCliHelper.Core.History;
 using PEPCliHelper.Infrastructure;
@@ -5,28 +7,41 @@ using PEPCliHelper.Presentation;
 
 namespace PEPCliHelper.CommandsBuilders;
 
-/// <summary>pep build all | pep build version &lt;versao&gt; (spec 009).</summary>
+public enum BuildScope
+{
+  /// <summary>pep build: versões por --version/--all ou seleção interativa.</summary>
+  Selection,
+
+  /// <summary>pep build all</summary>
+  All,
+
+  /// <summary>pep build version &lt;versao&gt;</summary>
+  Version,
+}
+
+/// <summary>pep build | pep build all | pep build version &lt;versao&gt; (spec 009). Um único fluxo: seleção → plano → confirmação → execução.</summary>
 public sealed class BuildBuilder : CommandBuilderBase
 {
-  private readonly bool _all;
+  private readonly BuildScope _scope;
 
-  public BuildBuilder(AppServices services, bool all)
+  public BuildBuilder(AppServices services, BuildScope scope)
     : base(services)
   {
-    _all = all;
+    _scope = scope;
   }
 
   public override async Task<int> BuildAsync(CommandLine line, CancellationToken cancellationToken)
   {
     var catalog = Services.RequireCatalog();
-    var project = OptionalProject(catalog, line.Option("project"));
-    var versions = _all
-      ? catalog.Active
-      : [ResolveVersion(catalog, RequireValue(line.Positional(0), "a versão (ex.: pep build version 2606)", line), "")];
+    var projects = line.OptionValues("project").Select(alias => ResolveProject(catalog, alias)).ToList();
 
-    var locations = catalog.LocateAll(versions, project);
+    var (versions, prompted) = await ResolveVersionsAsync(catalog, line, cancellationToken);
+    if (prompted && projects.Count == 0)
+      projects = await SelectProjectsAsync(catalog, cancellationToken);
+
+    var locations = BuildOrder.Arrange(catalog, versions, projects);
     var history = BeginHistory("build", line);
-    history.Describe(project?.Alias, versions: versions.Select(v => v.Id));
+    history.Describe(projects.Count == 0 ? null : string.Join(",", projects.Select(p => p.Alias)), versions: versions.Select(v => v.Id));
 
     var service = Services.BuildService;
     var plan = await Ui.WithStatusAsync("Preparando build", _ => service.PlanAsync(locations, cancellationToken));
@@ -75,4 +90,51 @@ public sealed class BuildBuilder : CommandBuilderBase
     ReportHistory(history);
     return result.ExitCode;
   }
+
+  private async Task<(IReadOnlyList<VersionEntry> Versions, bool Prompted)> ResolveVersionsAsync(VersionCatalog catalog, CommandLine line, CancellationToken cancellationToken)
+  {
+    switch (_scope)
+    {
+      case BuildScope.All:
+        return (catalog.Active, false);
+
+      case BuildScope.Version:
+        return ([ResolveVersion(catalog, RequireValue(line.Positional(0), "a versão (ex.: pep build version 2606)", line), "")], false);
+    }
+
+    var tokens = line.OptionValues("version");
+    var all = line.Flag("all");
+    if (all && tokens.Count > 0)
+      throw new UsageException("Use --all ou --version, não os dois.", "Ex.: pep build --all  ou  pep build --version 2606 --version 2602");
+
+    if (all)
+      return (catalog.Active, false);
+    if (tokens.Count > 0)
+      return (tokens.Select(token => ResolveVersion(catalog, token, "")).ToList(), false);
+
+    if (!Ui.CanPrompt)
+    {
+      throw new UsageException(
+        "Informe as versões do build (--version <versao>, repetível) ou --all.",
+        "Ex.: pep build --version 2606 --project back --dry-run  ou  pep build --all");
+    }
+
+    var selected = await Ui.MultiSelectAsync("Build de quais versões?", catalog.Active, v => v.Label, cancellationToken,
+      catalog.Current is null ? null : [catalog.Current]);
+    if (selected.Count == 0)
+      throw new OperationCanceledException("Nenhuma versão selecionada.");
+    return (selected, true);
+  }
+
+  private async Task<List<ProjectDefinition>> SelectProjectsAsync(VersionCatalog catalog, CancellationToken cancellationToken)
+  {
+    var ordered = catalog.Projects.OrderByDescending(p => p.Principal).ToList();
+    var selected = await Ui.MultiSelectAsync("Quais projetos compilar?", ordered, ProjectLabel, cancellationToken, ordered);
+    if (selected.Count == 0)
+      throw new OperationCanceledException("Nenhum projeto selecionado.");
+    return selected;
+  }
+
+  private static string ProjectLabel(ProjectDefinition project) =>
+    $"{project.Alias} · {project.Name} ({project.Solution ?? "sem solução"})" + (project.Principal ? " — principal, compila primeiro" : string.Empty);
 }

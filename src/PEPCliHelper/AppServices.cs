@@ -117,7 +117,7 @@ public sealed class AppServices
       ConfigLoadStatus.Loaded => load.Config!,
       ConfigLoadStatus.Missing => throw new UsageException(
         $"Configuração não encontrada: {load.Path}",
-        "Execute 'pep config init' e depois 'pep env discover' e 'pep env configure'.",
+        "Execute 'pep config auto' (detecta Atual\\Release e as legadas). Alternativa manual: 'pep config init' e 'pep env configure'.",
         load.Path),
       _ => throw new UsageException(
         "Configuração inválida: " + string.Join(" | ", load.Errors),
@@ -133,7 +133,7 @@ public sealed class AppServices
     {
       throw new PreconditionException(
         "O catálogo de versões está vazio: nenhuma versão atual configurada.",
-        "Execute 'pep env discover' para ver as pastas candidatas e 'pep env configure' para definir a atual e as legadas.",
+        "Execute 'pep config auto' para detectar a atual e as legadas pelas pastas, ou 'pep env configure' para escolher manualmente.",
         ConfigStore.Path);
     }
 

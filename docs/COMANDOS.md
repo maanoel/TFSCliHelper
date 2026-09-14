@@ -9,7 +9,7 @@ Sintaxe geral: `pep <comando> [argumentos] [opções]`. Sem argumentos abre o me
 | Opção | Efeito |
 |---|---|
 | `--help`, `-h` | Ajuda do comando |
-| `--version` | Número da versão |
+| `--version` | Número da versão (só antes de qualquer comando; depois do comando é opção dele, ex.: `pep build --version 2606`) |
 | `--json` | Saída JSON sem cores, animações ou prompts (implica `--non-interactive`) |
 | `--non-interactive` | Nunca pergunta; entrada ausente ⇒ exit 2 |
 | `--yes`, `-y` | Confirma um plano completo. Não ignora validações, não resolve conflitos, não cria mapeamentos, não autoriza check-in |
@@ -54,16 +54,28 @@ Saída: 0 todos aplicados/já integrados · 3 nada executado por bloqueio · 4 f
 | `--project, -p <alias>` | Somente um projeto |
 | `--dry-run` | Validação de mapeamentos, pending changes e `get /preview` |
 
-### `pep build all` · `pep build version <versao>`
+### `pep build` · `pep build all` · `pep build version <versao>`
 
-MSBuild sequencial: `Sau-Saude.sln` e depois `RM.Pep.sln` (ordem dos projetos na configuração). Não faz get e não encerra o RM.Host (bloqueia se o host da versão estiver aberto).
+MSBuild sequencial. Não faz get e não encerra o RM.Host (bloqueia se o host da versão estiver aberto).
+
+**Ordem:** versões atual → legadas (ordem do catálogo); em cada versão o projeto **principal** (PEP, `RM.Pep.sln`) compila primeiro e depois os demais selecionados na ordem da configuração (Saúde, `Sau-Saude.sln`). A coluna *Ordem* do plano mostra a sequência.
+
+`pep build` sem `--version`/`--all`, em terminal interativo, pergunta as versões (atual já marcada) e os projetos (todos marcados; Espaço desmarca). Nada marcado cancela (130). Em modo não interativo, `--version` ou `--all` é obrigatório (exit 2).
 
 | Opção | Descrição |
 |---|---|
-| `--project, -p <alias>` | Somente um projeto |
+| `--version <versao>` | Somente `pep build`; repetível (ex.: `--version atual --version 2606`) |
+| `--all` | Somente `pep build`; todas as versões ativas (não combina com `--version`) |
+| `--project, -p <alias>` | Repetível: `back` (PEP) e/ou `sau` (Saúde). Padrão: todos |
 | `--configuration <cfg>` | `/p:Configuration=<cfg>` |
 | `--continue-on-failure` | Continua após falha |
 | `--dry-run` | Só o plano |
+
+```powershell
+pep build                                            # seleção interativa
+pep build --version 2606 --project back --dry-run    # só o PEP da 2606
+pep build --all --project sau                        # só o Saúde, todas as versões
+```
 
 ## Ambientes e configuração
 
@@ -74,6 +86,7 @@ MSBuild sequencial: `Sau-Saude.sln` e depois `RM.Pep.sln` (ordem dos projetos na
 | `pep env configure` | Seleção guiada da atual e até 4 legadas; revisão e confirmação antes de gravar |
 | `pep env configure --atual <id> --legado <id>... --yes` | Rotação não interativa |
 | `pep env validate` | Pastas e mapeamentos das versões ativas |
+| `pep config auto [--yes]` | Configuração automática: `<raiz>\Atual\Release` atual e as 4 legadas mais novas de `<raiz>\Legado` ativas (ordem numérica), mais antigas desativadas. Sem consulta ao TFVC; confirmação com Enter; backup |
 | `pep config init [--force]` | Cria a configuração com defaults (backup com `--force`) |
 | `pep config show` | Configuração efetiva e arquivo usado |
 | `pep config validate` | 0 válida, 2 inválida |

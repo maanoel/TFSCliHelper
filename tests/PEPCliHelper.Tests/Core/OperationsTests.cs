@@ -1,4 +1,5 @@
 using PEPCliHelper.Core.Build;
+using PEPCliHelper.Core.Catalog;
 using PEPCliHelper.Core.Common;
 using PEPCliHelper.Core.Configuration;
 using PEPCliHelper.Core.Execution;
@@ -62,7 +63,7 @@ public class GetServiceTests
   {
     var catalog = TestData.Catalog();
     var tfvc = TestData.HealthyTfvc(_fileSystem, "12.1.2606", "12.1.2602");
-    tfvc.GetStatus[TestData.Local("12.1.2610", "Sau-Saude")] = TfStatus.NetworkError;
+    tfvc.GetStatus[TestData.Local("12.1.2610", "Sau-PEP")] = TfStatus.NetworkError;
     var service = new GetService(tfvc, _fileSystem);
     var plan = await service.PlanAsync(catalog.LocateAll(catalog.Active), NullOperationLog.Instance, CancellationToken.None);
 
@@ -107,7 +108,7 @@ public class BuildServiceTests
     _fileSystem.AddFile(@"C:\LR\Atual\Release\Sau-Saude\Sau-Saude.sln").AddFile(@"C:\LR\Atual\Release\Sau-PEP\RM.Pep.sln");
     _executor.Respond = _ => new CommandResult(1, "a.cs(1): error CS1002: ; expected", "", TimeSpan.Zero);
     var service = Service();
-    var plan = await service.PlanAsync(catalog.LocateAll([catalog.Current!]), CancellationToken.None);
+    var plan = await service.PlanAsync(BuildOrder.Arrange(catalog, [catalog.Current!]), CancellationToken.None);
 
     var result = await service.ExecuteAsync(plan, null, false, NullOperationLog.Instance, CancellationToken.None);
 
@@ -115,7 +116,7 @@ public class BuildServiceTests
     Assert.Equal(BuildTargetState.NotStarted, result.Targets[1].State);
     Assert.Equal(ExitCodes.OperationFailed, result.ExitCode);
     Assert.Single(_executor.Executed);
-    Assert.Equal("Sau-Saude.sln", Path.GetFileName(_executor.Executed[0].Arguments[0]));
+    Assert.Equal("RM.Pep.sln", Path.GetFileName(_executor.Executed[0].Arguments[0]));
   }
 
   [Fact]
@@ -131,6 +132,67 @@ public class BuildServiceTests
     var command = _executor.Executed.Single();
     Assert.Contains("/p:Configuration=Release", command.Arguments);
     Assert.DoesNotContain(command.Arguments, a => a.Contains("get", StringComparison.OrdinalIgnoreCase));
+  }
+}
+
+public class BuildOrderTests
+{
+  private static PepConfig LegacyConfigSauFirst()
+  {
+    var config = TestData.Config();
+    config.Projects.Reverse();
+    foreach (var project in config.Projects)
+      project.Principal = false;
+    return config;
+  }
+
+  private static List<string> Order(VersionCatalog catalog, IEnumerable<VersionEntry> versions, params string[] aliases) =>
+    BuildOrder.Arrange(catalog, versions, aliases.Select(a => catalog.FindProject(a)!))
+      .Select(l => $"{l.Version.Id}:{l.Project.Alias}")
+      .ToList();
+
+  [Fact]
+  public void Arrange_ConfigLegadaComSauPrimeiroSemPrincipal_BackPrimeiroEmCadaVersao()
+  {
+    var catalog = VersionCatalog.FromConfig(LegacyConfigSauFirst());
+
+    var order = Order(catalog, catalog.Active);
+
+    Assert.Equal(["12.1.2610:back", "12.1.2610:sau", "12.1.2606:back", "12.1.2606:sau", "12.1.2602:back", "12.1.2602:sau"], order);
+  }
+
+  [Fact]
+  public void Arrange_PrincipalExplicitoEmOutroAlias_Respeitado()
+  {
+    var config = LegacyConfigSauFirst();
+    config.Projects.Single(p => p.Alias == "sau").Principal = true;
+    config.Projects.Reverse();
+    var catalog = VersionCatalog.FromConfig(config);
+
+    var order = Order(catalog, [catalog.Current!]);
+
+    Assert.Equal(["12.1.2610:sau", "12.1.2610:back"], order);
+  }
+
+  [Fact]
+  public void Arrange_SomenteSau_CompilaApenasSaude()
+  {
+    var catalog = TestData.Catalog();
+
+    var order = Order(catalog, [catalog.Current!], "sau");
+
+    Assert.Equal(["12.1.2610:sau"], order);
+  }
+
+  [Fact]
+  public void Arrange_VersoesForaDeOrdem_AtualPrimeiroDepoisLegadasDoCatalogo()
+  {
+    var catalog = TestData.Catalog();
+    var legacy = catalog.ResolveVersion("2602").Version!;
+
+    var order = Order(catalog, [legacy, catalog.Current!, legacy], "back");
+
+    Assert.Equal(["12.1.2610:back", "12.1.2602:back"], order);
   }
 }
 

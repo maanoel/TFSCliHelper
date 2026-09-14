@@ -40,29 +40,59 @@ public sealed class GetVersionChain : ICommandChain
   public ICommandBuilder CreateBuilder(AppServices services) => new GetBuilder(services, all: false);
 }
 
-public sealed class BuildAllChain : ICommandChain
+internal static class BuildOptions
 {
-  private static readonly OptionSpec[] Options =
+  public const string OrderDetails =
+    "Ordem: versões atual → legadas; em cada versão o projeto principal (PEP, 'principal' na configuração) compila primeiro, " +
+    "depois os demais selecionados. Não executa get e não encerra o RM.Host: se o host da versão estiver aberto, o build é bloqueado com orientação.";
+
+  public static readonly IReadOnlyList<OptionSpec> Shared =
   [
-    GetBuildOptions.Project,
+    new OptionSpec("project", "<alias>", "Projeto a compilar (repetível): back (PEP) ou sau (Saúde). Padrão: todos.", Repeatable: true, ShortName: "p"),
     new OptionSpec("configuration", "<cfg>", "Configuração do MSBuild (ex.: Debug, Release)."),
     new OptionSpec("continue-on-failure", null, "Continua nas próximas soluções após falha."),
     GetBuildOptions.DryRun,
   ];
+}
 
+public sealed class BuildChain : ICommandChain
+{
+  public CommandHelp Help { get; } = new()
+  {
+    Path = ["build"],
+    Category = "Get e build",
+    Summary = "Compila as versões e projetos selecionados (MSBuild, sequencial; PEP sempre primeiro).",
+    Details = "Sem --version/--all, em terminal interativo pergunta as versões (atual marcada) e os projetos (todos marcados). " + BuildOptions.OrderDetails,
+    Options =
+    [
+      new OptionSpec("version", "<versao>", "Versão a compilar (repetível; ex.: atual, 2606).", Repeatable: true),
+      new OptionSpec("all", null, "Todas as versões ativas."),
+      .. BuildOptions.Shared,
+    ],
+    Examples =
+    [
+      new("pep build", "Seleciona versões e projetos interativamente."),
+      new("pep build --version 2606 --project back --dry-run", "Plano apenas do PEP (RM.Pep.sln) na 12.1.2606."),
+      new("pep build --all --project sau", "Somente o Saúde em todas as versões ativas."),
+    ],
+  };
+
+  public ICommandBuilder CreateBuilder(AppServices services) => new BuildBuilder(services, BuildScope.Selection);
+}
+
+public sealed class BuildAllChain : ICommandChain
+{
   public CommandHelp Help { get; } = new()
   {
     Path = ["build", "all"],
     Category = "Get e build",
-    Summary = "Compila Sau-Saude e Sau-PEP em todas as versões ativas (MSBuild, sequencial).",
-    Details = "Não executa get e não encerra o RM.Host: se o host da versão estiver aberto, o build é bloqueado com orientação.",
-    Options = Options,
+    Summary = "Compila Sau-PEP e Sau-Saude em todas as versões ativas (MSBuild, sequencial; PEP primeiro).",
+    Details = BuildOptions.OrderDetails,
+    Options = BuildOptions.Shared,
     Examples = [new("pep build all", "Todas as versões ativas."), new("pep build all --project back --configuration Release", "Somente RM.Pep.sln em Release.")],
   };
 
-  internal static IReadOnlyList<OptionSpec> SharedOptions => Options;
-
-  public ICommandBuilder CreateBuilder(AppServices services) => new BuildBuilder(services, all: true);
+  public ICommandBuilder CreateBuilder(AppServices services) => new BuildBuilder(services, BuildScope.All);
 }
 
 public sealed class BuildVersionChain : ICommandChain
@@ -71,11 +101,12 @@ public sealed class BuildVersionChain : ICommandChain
   {
     Path = ["build", "version"],
     Category = "Get e build",
-    Summary = "Compila Sau-Saude e Sau-PEP de uma versão.",
+    Summary = "Compila Sau-PEP e Sau-Saude de uma versão (PEP primeiro).",
+    Details = BuildOptions.OrderDetails,
     Arguments = [new ArgumentSpec("versao", "Versão (ex.: atual, 2606).")],
-    Options = BuildAllChain.SharedOptions,
+    Options = BuildOptions.Shared,
     Examples = [new("pep build version 2606", "Compila a 12.1.2606.")],
   };
 
-  public ICommandBuilder CreateBuilder(AppServices services) => new BuildBuilder(services, all: false);
+  public ICommandBuilder CreateBuilder(AppServices services) => new BuildBuilder(services, BuildScope.Version);
 }

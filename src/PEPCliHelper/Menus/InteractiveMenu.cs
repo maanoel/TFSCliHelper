@@ -27,6 +27,7 @@ public sealed class InteractiveMenu
   public async Task<int> RunAsync()
   {
     Ui.Banner();
+    await OfferFirstRunSetupAsync();
     Ui.Muted("  Use as setas para navegar e Enter para escolher. Ctrl+C cancela a operação em andamento.");
 
     var lastExit = ExitCodes.Success;
@@ -73,6 +74,28 @@ public sealed class InteractiveMenu
     }
   }
 
+  /// <summary>Sem configuração (ou sem versão atual) oferece a configuração automática; falhas aqui não impedem o menu.</summary>
+  private async Task OfferFirstRunSetupAsync()
+  {
+    var setup = new FirstRunSetup(_services);
+    if (!setup.IsNeeded())
+      return;
+
+    _cancellation.Reset();
+    try
+    {
+      await setup.RunAsync(_cancellation.Token);
+    }
+    catch (OperationCanceledException)
+    {
+      Ui.Warn("Configuração inicial cancelada. Abrindo o menu.");
+    }
+    catch (PepCliException ex)
+    {
+      Ui.RenderError(ex);
+    }
+  }
+
   private static readonly (string Key, string Label)[] MainOptions =
   [
     ("merge", "Merge de changeset entre versões"),
@@ -96,9 +119,8 @@ public sealed class InteractiveMenu
         return await MergeAsync(cancellationToken);
 
       case "get":
-      case "build":
       {
-        var scope = await Ui.SelectAsync(key == "get" ? "Get em quais versões?" : "Build de quais versões?",
+        var scope = await Ui.SelectAsync("Get em quais versões?",
           ["Todas as versões ativas", "Uma versão", "Simular todas (dry-run)", Back], s => s, cancellationToken);
         return scope switch
         {
@@ -109,13 +131,26 @@ public sealed class InteractiveMenu
         };
       }
 
+      case "build":
+      {
+        // Versões e projetos são escolhidos dentro de 'pep build' (PEP sempre primeiro).
+        var mode = await Ui.SelectAsync("Build (MSBuild)", ["Selecionar versões e projetos", "Simular (dry-run) com seleção", Back], s => s, cancellationToken);
+        return mode switch
+        {
+          "Selecionar versões e projetos" => ["build"],
+          "Simular (dry-run) com seleção" => ["build", "--dry-run"],
+          _ => null,
+        };
+      }
+
       case "env":
       {
         var action = await Ui.SelectAsync("Ambientes e versões",
-          ["Listar catálogo", "Descobrir versões (somente leitura)", "Configurar atual e legadas (rotação)", "Validar mapeamentos", "Criar configuração inicial", "Mostrar configuração", Back],
+          ["Configuração automática (detectar versões)", "Listar catálogo", "Descobrir versões (somente leitura)", "Configurar atual e legadas (rotação)", "Validar mapeamentos", "Criar configuração inicial", "Mostrar configuração", Back],
           s => s, cancellationToken);
         return action switch
         {
+          "Configuração automática (detectar versões)" => ["config", "auto"],
           "Listar catálogo" => ["env", "list"],
           "Descobrir versões (somente leitura)" => ["env", "discover"],
           "Configurar atual e legadas (rotação)" => ["env", "configure"],

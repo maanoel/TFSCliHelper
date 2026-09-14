@@ -104,6 +104,15 @@ public class ConfigValidatorTests
   }
 
   [Fact]
+  public void Validate_DoisProjetosPrincipais_Erro()
+  {
+    var config = TestData.Config();
+    config.Projects.ForEach(p => p.Principal = true);
+
+    Assert.Contains(ConfigValidator.Validate(config), e => e.Contains("principal") && e.Contains("apenas um"));
+  }
+
+  [Fact]
   public void Validate_CaminhoDeServidorNoCaminhoLocal_Erro()
   {
     var config = TestData.Config();
