@@ -20,7 +20,7 @@ CLI da equipe PEP RM para **propagar changesets TFVC entre versões em um único
 | Você quer… | Comando |
 |---|---|
 | Levar o changeset 861799 da atual para todas as legadas | `pep merge --project back --source atual --all-legacy --changeset 861799` |
-| Simular antes | o mesmo comando com `--dry-run` |
+| Ver só o plano (scripts) | o mesmo comando com `--dry-run` |
 | Ser guiado passo a passo | `pep` (menu) ou `pep merge` |
 | Atualizar todas as versões | `pep get all` |
 | Escolher versões e projetos para compilar (PEP sempre primeiro) | `pep build` |
@@ -50,19 +50,12 @@ Detalhes, modo silencioso e desinstalação em [docs/DISTRIBUICAO.md](docs/DISTR
 ## Primeiros passos
 
 1. Abra o terminal e digite `pep`.
-2. Na tela **Primeira configuração**, confira a tabela e pressione **Enter** em *Aplicar configuração automática (recomendado)*.
+2. Na primeira execução o PEP CLI **se configura sozinho, sem perguntas**, e avisa *"Configuração automática concluída: o PEP CLI está pronto para uso."*
    A atual é `C:\Linha-RM\Atual\Release`; as 4 versões mais novas de `C:\Linha-RM\Legado` ficam ativas e as mais antigas, desativadas.
-3. `pep login` para autenticar o tf.exe.
-4. Pronto. Opcional: `pep doctor` e `pep env validate` confirmam ferramentas e mapeamentos TFVC.
+3. Pronto. No primeiro acesso ao TFVC (merge, get, doctor...), a janela de login do TFS pode aparecer: entre com a conta da coleção e o PEP CLI continua a operação.
+   Opcional: `pep doctor` e `pep env validate` confirmam ferramentas e mapeamentos TFVC.
 
-Por argumentos: `pep config auto` (ou `pep config auto --yes`). Configuração manual continua disponível:
-
-```powershell
-pep config init        # cria %APPDATA%\PepCli\config.json com defaults seguros
-pep env discover       # lista pastas em C:\Linha-RM\Atual e \Legado e seus mapeamentos (somente leitura)
-pep env configure      # escolhe a versão atual e até 4 legadas ativas
-pep doctor             # valida ferramentas, conexão, catálogo e mapeamentos
-```
+Não há configuração manual. Para detectar as versões de novo (ex.: nova pasta em `Legado`): `pep config auto`.
 
 ## Uso interativo
 
@@ -70,7 +63,8 @@ pep doctor             # valida ferramentas, conexão, catálogo e mapeamentos
 pep
 ```
 
-Abre o banner e um menu navegável por setas: Merge · Get · Build · Ambientes e versões · Diagnóstico · Pending changes · Ferramentas locais · Histórico · Ajuda · Sair. Cada tela oferece **Voltar**, mostra o plano antes de executar e pede confirmação. `Ctrl+C` cancela a operação atual (cancelamento **não** é rollback).
+Abre o banner e um menu navegável por setas: Merge · Get · Build · Ambientes e versões · Diagnóstico · Pending changes · Ferramentas locais · Histórico · Prompt de comandos · Ajuda · Sair.
+**Prompt de comandos** abre `pep>` dentro do CLI: digite comandos do PEP CLI com ou sem `pep` (ex.: `merge --changeset 669997`, `pep build --all`); `sair` volta ao menu. Comandos do Windows não são executados. Cada tela oferece **Voltar**, mostra o plano antes de executar e pede confirmação. `Ctrl+C` cancela a operação atual (cancelamento **não** é rollback).
 
 ## Uso por argumentos
 

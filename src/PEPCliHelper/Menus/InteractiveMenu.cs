@@ -13,13 +13,20 @@ public sealed class InteractiveMenu
 {
   private const string Back = "← Voltar";
 
+  public const string PromptLabel = "pep>";
+
+  private static readonly string[] PromptExitWords = ["sair", "exit", "voltar", "quit"];
+
   private readonly AppServices _services;
   private readonly ConsoleCancellation _cancellation;
+  private readonly Func<GlobalOptions, AppServices> _createServices;
 
-  public InteractiveMenu(AppServices services, ConsoleCancellation cancellation)
+  /// <param name="createServices">Cria serviços com as opções globais digitadas no prompt (ex.: --yes, --json).</param>
+  public InteractiveMenu(AppServices services, ConsoleCancellation cancellation, Func<GlobalOptions, AppServices>? createServices = null)
   {
     _services = services;
     _cancellation = cancellation;
+    _createServices = createServices ?? AppServices.CreateDefault;
   }
 
   private Ui Ui => _services.Ui;
@@ -27,7 +34,7 @@ public sealed class InteractiveMenu
   public async Task<int> RunAsync()
   {
     Ui.Banner();
-    await OfferFirstRunSetupAsync();
+    EnsureConfigured();
     Ui.Muted("  Use as setas para navegar e Enter para escolher. Ctrl+C cancela a operação em andamento.");
 
     var lastExit = ExitCodes.Success;
@@ -49,6 +56,13 @@ public sealed class InteractiveMenu
       {
         Ui.Muted("  Até logo.");
         return lastExit;
+      }
+
+      if (option.Key == "prompt")
+      {
+        lastExit = await RunPromptAsync(lastExit);
+        Ui.Blank();
+        continue;
       }
 
       try
@@ -74,26 +88,96 @@ public sealed class InteractiveMenu
     }
   }
 
-  /// <summary>Sem configuração (ou sem versão atual) oferece a configuração automática; falhas aqui não impedem o menu.</summary>
-  private async Task OfferFirstRunSetupAsync()
+  /// <summary>Sem configuração (ou sem versão atual) aplica a configuração automática sem perguntas; falhas aqui não impedem o menu.</summary>
+  private void EnsureConfigured()
   {
-    var setup = new FirstRunSetup(_services);
-    if (!setup.IsNeeded())
-      return;
-
-    _cancellation.Reset();
     try
     {
-      await setup.RunAsync(_cancellation.Token);
-    }
-    catch (OperationCanceledException)
-    {
-      Ui.Warn("Configuração inicial cancelada. Abrindo o menu.");
+      new FirstRunSetup(_services).EnsureConfigured();
     }
     catch (PepCliException ex)
     {
       Ui.RenderError(ex);
     }
+  }
+
+  /// <summary>
+  /// Prompt 'pep&gt;' dentro do CLI: cada linha é um comando do PEP CLI (com ou sem o prefixo 'pep'), executado pelo
+  /// mesmo despacho do modo por argumentos. Não executa comandos do shell. 'sair' ou linha vazia com Ctrl+C volta ao menu.
+  /// </summary>
+  private async Task<int> RunPromptAsync(int lastExit)
+  {
+    Ui.Title("Prompt de comandos");
+    Ui.Muted("  Digite comandos do PEP CLI, com ou sem 'pep' (ex.: merge --changeset 669997, pep build --all, help).");
+    Ui.Muted("  'sair' volta ao menu. Apenas comandos do PEP CLI são aceitos; comandos do Windows não são executados.");
+
+    while (true)
+    {
+      _cancellation.Reset();
+      string line;
+      try
+      {
+        line = await Ui.ReadLineAsync(PromptLabel, _cancellation.Token);
+      }
+      catch (OperationCanceledException)
+      {
+        return lastExit;
+      }
+
+      try
+      {
+        var tokens = CommandLineSplitter.Split(line);
+        if (tokens.Count > 0 && tokens[0].Equals("pep", StringComparison.OrdinalIgnoreCase))
+          tokens.RemoveAt(0);
+        if (tokens.Count == 0)
+          continue;
+        if (tokens.Count == 1 && PromptExitWords.Contains(tokens[0], StringComparer.OrdinalIgnoreCase))
+          return lastExit;
+
+        lastExit = await ExecutePromptLineAsync(tokens);
+      }
+      catch (PepCliException ex)
+      {
+        Ui.RenderError(ex);
+        lastExit = ex.ExitCode;
+      }
+
+      _services.InvalidateConfig();
+      Ui.Blank();
+    }
+  }
+
+  private async Task<int> ExecutePromptLineAsync(IReadOnlyList<string> line)
+  {
+    var (typed, tokens) = GlobalOptions.Parse(line, Environment.GetEnvironmentVariable);
+    var baseOptions = _services.Options;
+    var options = new GlobalOptions
+    {
+      NoColor = baseOptions.NoColor || typed.NoColor,
+      Ascii = baseOptions.Ascii || typed.Ascii,
+      Json = typed.Json,
+      NonInteractive = typed.NonInteractive,
+      Yes = typed.Yes,
+      Verbose = baseOptions.Verbose || typed.Verbose,
+      Help = typed.Help,
+      ShowVersion = typed.ShowVersion,
+      ConfigPath = typed.ConfigPath ?? baseOptions.ConfigPath,
+    };
+
+    if (options.ShowVersion && tokens.Count == 0)
+    {
+      Ui.Info(AppInfo.Version);
+      return ExitCodes.Success;
+    }
+
+    var services = _createServices(options);
+    if (tokens.Count == 0)
+    {
+      HelpRenderer.RenderGeneral(services.Ui, services.Chains);
+      return ExitCodes.Success;
+    }
+
+    return await PepApp.DispatchAsync(services, tokens, _cancellation.Token);
   }
 
   private static readonly (string Key, string Label)[] MainOptions =
@@ -103,10 +187,10 @@ public sealed class InteractiveMenu
     ("build", "Build (MSBuild)"),
     ("env", "Ambientes e versões"),
     ("doctor", "Diagnóstico (doctor)"),
-    ("login", "Login do tf.exe (resolver TF30063 / sem autenticação)"),
     ("pending", "Pending changes"),
     ("tools", "Ferramentas locais (broker, host, RM)"),
     ("history", "Histórico de execuções"),
+    ("prompt", "Prompt de comandos (digitar comandos pep)"),
     ("help", "Ajuda"),
     ("exit", "Sair"),
   ];
@@ -116,53 +200,40 @@ public sealed class InteractiveMenu
     switch (key)
     {
       case "merge":
-        return await MergeAsync(cancellationToken);
+        // O merge sempre mostra o plano antes da confirmação.
+        return ["merge"];
 
       case "get":
       {
         var scope = await Ui.SelectAsync("Get em quais versões?",
-          ["Todas as versões ativas", "Uma versão", "Simular todas (dry-run)", Back], s => s, cancellationToken);
+          ["Todas as versões ativas", "Uma versão", Back], s => s, cancellationToken);
         return scope switch
         {
           "Todas as versões ativas" => [key, "all"],
-          "Simular todas (dry-run)" => [key, "all", "--dry-run"],
           "Uma versão" => await VersionAsync(cancellationToken) is { } version ? [key, "version", version] : null,
           _ => null,
         };
       }
 
       case "build":
-      {
         // Versões e projetos são escolhidos dentro de 'pep build' (PEP sempre primeiro).
-        var mode = await Ui.SelectAsync("Build (MSBuild)", ["Selecionar versões e projetos", "Simular (dry-run) com seleção", Back], s => s, cancellationToken);
-        return mode switch
-        {
-          "Selecionar versões e projetos" => ["build"],
-          "Simular (dry-run) com seleção" => ["build", "--dry-run"],
-          _ => null,
-        };
-      }
+        return ["build"];
 
       case "env":
       {
+        // Sem opções de configuração na tela: a configuração é automática na primeira execução.
+        // Os comandos 'pep config auto' e 'pep config show' continuam disponíveis por argumento.
         var action = await Ui.SelectAsync("Ambientes e versões",
-          ["Configuração automática (detectar versões)", "Listar catálogo", "Descobrir versões (somente leitura)", "Configurar atual e legadas (rotação)", "Validar mapeamentos", "Criar configuração inicial", "Mostrar configuração", Back],
+          ["Listar catálogo", "Descobrir versões (somente leitura)", "Validar mapeamentos", Back],
           s => s, cancellationToken);
         return action switch
         {
-          "Configuração automática (detectar versões)" => ["config", "auto"],
           "Listar catálogo" => ["env", "list"],
           "Descobrir versões (somente leitura)" => ["env", "discover"],
-          "Configurar atual e legadas (rotação)" => ["env", "configure"],
           "Validar mapeamentos" => ["env", "validate"],
-          "Criar configuração inicial" => ["config", "init"],
-          "Mostrar configuração" => ["config", "show"],
           _ => null,
         };
       }
-
-      case "login":
-        return ["login"];
 
       case "doctor":
         return ["doctor"];
@@ -217,17 +288,6 @@ public sealed class InteractiveMenu
       default:
         return ["help"];
     }
-  }
-
-  private async Task<IReadOnlyList<string>?> MergeAsync(CancellationToken cancellationToken)
-  {
-    var mode = await Ui.SelectAsync("Merge", ["Executar merge (com plano e confirmação)", "Simular merge (dry-run)", Back], s => s, cancellationToken);
-    return mode switch
-    {
-      "Executar merge (com plano e confirmação)" => ["merge"],
-      "Simular merge (dry-run)" => ["merge", "--dry-run"],
-      _ => null,
-    };
   }
 
   private async Task<string?> VersionAsync(CancellationToken cancellationToken)

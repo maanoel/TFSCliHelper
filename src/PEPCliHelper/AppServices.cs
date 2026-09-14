@@ -22,7 +22,7 @@ namespace PEPCliHelper;
 
 /// <summary>
 /// Composição manual das dependências (sem container). Serviços que dependem da configuração
-/// são criados sob demanda, para que comandos como 'config init' funcionem sem arquivo.
+/// são criados sob demanda, para que comandos como 'config auto' funcionem sem arquivo.
 /// </summary>
 public sealed class AppServices
 {
@@ -31,6 +31,7 @@ public sealed class AppServices
   private ConfigLoadResult? _load;
   private ToolLocator? _tools;
   private ITfvcClient? _tfvc;
+  private ITfvcClient? _innerTfvc;
 
   public AppServices(
     GlobalOptions options,
@@ -57,6 +58,7 @@ public sealed class AppServices
     _tfvcFactory = tfvcFactory;
     _toolsFactory = toolsFactory;
     Chains = ChainCatalog.Create();
+    Authenticator = new TfvcAuthenticator(this);
   }
 
   public GlobalOptions Options { get; }
@@ -67,7 +69,7 @@ public sealed class AppServices
 
   public ICommandExecutor Executor { get; }
 
-  /// <summary>Processos que precisam do terminal do usuário (login do tf.exe).</summary>
+  /// <summary>Processos que precisam do terminal do usuário (login automático do tf.exe).</summary>
   public IAttachedProcessRunner AttachedRunner { get; }
 
   public IProcessInspector Processes { get; }
@@ -82,7 +84,14 @@ public sealed class AppServices
 
   public ToolLocator Tools => _tools ??= _toolsFactory?.Invoke(this) ?? new ToolLocator(FileSystem, Executor, LoadConfig().Config?.Tools ?? new ToolsConfig());
 
-  public ITfvcClient Tfvc => _tfvc ??= _tfvcFactory?.Invoke(this)
+  /// <summary>Cliente TFVC com login automático em TF30063 (<see cref="AutoLoginTfvcClient"/>).</summary>
+  public ITfvcClient Tfvc => _tfvc ??= new AutoLoginTfvcClient(InnerTfvc, Authenticator);
+
+  /// <summary>Login automático do tf.exe: uma tentativa por processo, preservada ao recarregar a configuração.</summary>
+  public TfvcAuthenticator Authenticator { get; }
+
+  /// <summary>Cliente sem login automático; usado pela verificação do próprio login (sem recursão).</summary>
+  internal ITfvcClient InnerTfvc => _innerTfvc ??= _tfvcFactory?.Invoke(this)
     ?? new TfExeClient(Executor, async ct => (await Tools.RequireTfAsync(ct)).Path!);
 
   public LocalToolsService LocalTools => new(FileSystem, Processes, Time);
@@ -107,6 +116,7 @@ public sealed class AppServices
     _load = null;
     _tools = null;
     _tfvc = null;
+    _innerTfvc = null;
   }
 
   public PepConfig RequireConfig()
@@ -117,11 +127,11 @@ public sealed class AppServices
       ConfigLoadStatus.Loaded => load.Config!,
       ConfigLoadStatus.Missing => throw new UsageException(
         $"Configuração não encontrada: {load.Path}",
-        "Execute 'pep config auto' (detecta Atual\\Release e as legadas). Alternativa manual: 'pep config init' e 'pep env configure'.",
+        "Execute 'pep config auto' (detecta Atual\\Release e as legadas).",
         load.Path),
       _ => throw new UsageException(
         "Configuração inválida: " + string.Join(" | ", load.Errors),
-        "Corrija o arquivo e execute 'pep config validate'.",
+        "Corrija o arquivo (veja 'pep config validate') ou recrie com 'pep config auto --force' (backup).",
         load.Path),
     };
   }
@@ -133,7 +143,7 @@ public sealed class AppServices
     {
       throw new PreconditionException(
         "O catálogo de versões está vazio: nenhuma versão atual configurada.",
-        "Execute 'pep config auto' para detectar a atual e as legadas pelas pastas, ou 'pep env configure' para escolher manualmente.",
+        "Execute 'pep config auto' para detectar a atual e as legadas pelas pastas.",
         ConfigStore.Path);
     }
 

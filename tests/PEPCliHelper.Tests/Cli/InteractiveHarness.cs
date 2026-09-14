@@ -29,6 +29,8 @@ internal sealed class InteractiveHarness : IDisposable
     if (withConfig)
       new ConfigStore(FileSystem, ConfigPath).Save(TestData.Config());
     FileSystem.AddFile(TfExePath).AddFile(MsBuildPath);
+    // O login no terminal (tf workspaces sem /noprompt) grava a credencial no cache do tf.exe falso.
+    Attached.OnRun = Tfvc.Login;
     Console = new TestConsole().Interactive().Width(200);
     Console.EmitAnsiSequences = false;
   }
@@ -98,12 +100,12 @@ internal sealed class InteractiveHarness : IDisposable
   public async Task<int> RunMenuAsync()
   {
     using var cancellation = new ConsoleCancellation(listen: false);
-    return await new InteractiveMenu(CreateServices(new GlobalOptions()), cancellation).RunAsync();
+    return await new InteractiveMenu(CreateServices(new GlobalOptions()), cancellation, CreateServices).RunAsync();
   }
 
   public void Dispose() => Console.Dispose();
 
-  private AppServices CreateServices(GlobalOptions options)
+  public AppServices CreateServices(GlobalOptions options)
   {
     var effective = new GlobalOptions
     {

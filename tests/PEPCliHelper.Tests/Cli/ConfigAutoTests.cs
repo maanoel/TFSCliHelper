@@ -73,7 +73,7 @@ public class ConfigAutoTests
 
     Assert.Equal(ExitCodes.Usage, exit);
     Assert.Equal("{ inválido", cli.FileSystem.ReadAllText(CliHarness.ConfigPath));
-    Assert.Contains("config init --force", cli.Text);
+    Assert.Contains("config auto --force", cli.Text);
   }
 
   [Fact]
@@ -89,11 +89,12 @@ public class ConfigAutoTests
   }
 
   [Fact]
-  public async Task PrimeiraExecucao_EnterNaConfiguracaoAutomatica_GravaEAbreMenu()
+  public async Task PrimeiraExecucao_Menu_ConfiguraAutomaticamenteSemPerguntarEAvisaQueEstaPronto()
   {
     using var cli = new InteractiveHarness(withConfig: false);
     AddDefaultDisk(cli.FileSystem, "12.1.2606", "12.1.2602");
-    cli.Select(0).SelectLast();
+    // Única tecla: "Sair" no menu. Qualquer pergunta na configuração inicial consumiria a tecla e o teste falharia.
+    cli.SelectLast();
 
     var exit = await cli.RunAsync();
 
@@ -101,38 +102,67 @@ public class ConfigAutoTests
     var config = Saved(cli.FileSystem, InteractiveHarness.ConfigPath);
     Assert.Equal(["atual", "12.1.2606", "12.1.2602"], config.Versions.Select(v => v.Id));
     Assert.Contains("Primeira configuração", cli.Text);
-    Assert.Contains("Configuração gravada", cli.Text);
+    Assert.Contains(FirstRunSetup.ReadyMessage, cli.Text);
     Assert.Contains("Até logo", cli.Text);
   }
 
   [Fact]
-  public async Task PrimeiraExecucao_AgoraNao_NaoGravaEAbreMenu()
+  public async Task PrimeiraExecucao_ComandoDireto_ConfiguraAutomaticamenteEExecuta()
   {
-    using var cli = new InteractiveHarness(withConfig: false);
+    var cli = new CliHarness(withConfig: false);
     AddDefaultDisk(cli.FileSystem, "12.1.2606");
-    cli.Select(2).SelectLast();
 
-    var exit = await cli.RunAsync();
+    var exit = await cli.RunAsync("env", "list");
 
     Assert.Equal(ExitCodes.Success, exit);
-    Assert.False(cli.FileSystem.FileExists(InteractiveHarness.ConfigPath));
-    Assert.Contains("Até logo", cli.Text);
+    Assert.True(cli.FileSystem.FileExists(CliHarness.ConfigPath));
+    Assert.Contains(FirstRunSetup.ReadyMessage, cli.Text);
+    Assert.Contains("12.1.2606", cli.Text);
   }
 
   [Fact]
-  public async Task PrimeiraExecucao_SemAtualRelease_OfereceSomenteManualOuAgoraNao()
+  public async Task PrimeiraExecucao_SemAtualRelease_AvisaSemGravarEAbreMenu()
   {
     using var cli = new InteractiveHarness(withConfig: false);
     cli.FileSystem.AddDirectory($@"{DefaultRoot}\Legado\12.1.2606");
-    cli.SelectLast().SelectLast();
+    cli.SelectLast();
 
     var exit = await cli.RunAsync();
 
     Assert.Equal(ExitCodes.Success, exit);
     Assert.False(cli.FileSystem.FileExists(InteractiveHarness.ConfigPath));
     Assert.Contains("Pasta da versão atual não encontrada", cli.Text);
-    Assert.Contains(FirstRunSetup.ManualOption, cli.Text);
-    Assert.DoesNotContain(FirstRunSetup.AutoOption, cli.Text);
+    Assert.Contains("pep config auto", cli.Text);
+    Assert.DoesNotContain("manual", cli.Text);
+  }
+
+  [Theory]
+  [InlineData("env", "configure")]
+  [InlineData("config", "init")]
+  public async Task ConfiguracaoManual_ComandoRemovido_Exit2OrientaConfigAuto(string group, string command)
+  {
+    var cli = new CliHarness();
+    var before = cli.FileSystem.ReadAllText(CliHarness.ConfigPath);
+
+    var exit = await cli.RunAsync(group, command, "--non-interactive");
+
+    Assert.Equal(ExitCodes.Usage, exit);
+    Assert.Contains("pep config auto", cli.Text);
+    Assert.Equal(before, cli.FileSystem.ReadAllText(CliHarness.ConfigPath));
+  }
+
+  [Fact]
+  public async Task ConfigAuto_ForceComConfigInvalida_RecriaComBackup()
+  {
+    var cli = new CliHarness(withConfig: false);
+    AddDefaultDisk(cli.FileSystem, "12.1.2606");
+    cli.FileSystem.AddFile(CliHarness.ConfigPath, "{ inválido", readOnly: false);
+
+    var exit = await cli.RunAsync("config", "auto", "--force", "--yes");
+
+    Assert.Equal(ExitCodes.Success, exit);
+    Assert.Equal("atual", Saved(cli.FileSystem, CliHarness.ConfigPath).Versions.Single(v => v.IsCurrent).Id);
+    Assert.Contains("Backup", cli.Text);
   }
 
   [Fact]
@@ -148,17 +178,21 @@ public class ConfigAutoTests
   }
 
   [Fact]
-  public async Task Menu_AmbientesConfiguracaoAutomatica_ConfirmaComEnterEGrava()
+  public async Task Menu_Ambientes_SemOpcoesDeConfiguracao()
   {
     using var cli = new InteractiveHarness();
-    cli.Select(3).Select(0).Type(string.Empty).SelectLast();
+    var before = cli.FileSystem.ReadAllText(InteractiveHarness.ConfigPath);
+    // Ambientes → Voltar (última opção) → Sair.
+    cli.Select(3).SelectLast().SelectLast();
 
     var exit = await cli.RunMenuAsync();
 
     Assert.Equal(ExitCodes.Success, exit);
-    Assert.Contains("pep config auto", cli.Text);
-    var config = Saved(cli.FileSystem, InteractiveHarness.ConfigPath);
-    Assert.Equal("atual", config.Versions.Single(v => v.IsCurrent).Id);
-    Assert.Equal(["12.1.2606", "12.1.2602"], config.Versions.Where(v => v.Active && !v.IsCurrent).Select(v => v.Id));
+    Assert.Contains("Listar catálogo", cli.Text);
+    Assert.DoesNotContain("Configuração automática", cli.Text);
+    Assert.DoesNotContain("Mostrar configuração", cli.Text);
+    Assert.DoesNotContain("Configurar atual", cli.Text);
+    Assert.DoesNotContain("Criar configuração", cli.Text);
+    Assert.Equal(before, cli.FileSystem.ReadAllText(InteractiveHarness.ConfigPath));
   }
 }

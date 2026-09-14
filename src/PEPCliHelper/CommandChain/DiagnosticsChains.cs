@@ -11,25 +11,11 @@ public sealed class DoctorChain : ICommandChain
     Path = ["doctor"],
     Category = "Diagnóstico e TFVC",
     Summary = "Diagnóstico completo: configuração, ferramentas, conexão, catálogo, mapeamentos, build e disco.",
-    Details = "Somente leitura. Não corrige nada; cada falha traz o próximo passo.",
+    Details = "Somente leitura. Não corrige nada; cada falha traz o próximo passo.\nSem credencial do tf.exe (TF30063), em terminal interativo abre o login do TFS automaticamente e continua.",
     Examples = [new("pep doctor", "Primeira coisa a rodar quando algo falhar.")],
   };
 
   public ICommandBuilder CreateBuilder(AppServices services) => new DoctorBuilder(services);
-}
-
-public sealed class LoginChain : ICommandChain
-{
-  public CommandHelp Help { get; } = new()
-  {
-    Path = ["login"],
-    Category = "Diagnóstico e TFVC",
-    Summary = "Autentica o tf.exe na coleção (abre o login do tf.exe; uma vez por máquina).",
-    Details = "Executa 'tf workspaces /collection:<coleção>' no seu terminal, sem /noprompt, para o tf.exe pedir login e guardar a credencial.\nSomente leitura. O PEP CLI não recebe nem grava senha ou token.",
-    Examples = [new("pep login", "Resolve TF30063 (sem autenticação) antes do primeiro merge.")],
-  };
-
-  public ICommandBuilder CreateBuilder(AppServices services) => new LoginBuilder(services);
 }
 
 public sealed class WorkspaceListChain : ICommandChain

@@ -62,7 +62,7 @@ Destinos em que o changeset já foi integrado aparecem como **Já integrado** e 
 | Mensagem | Causa provável | Ação |
 |---|---|---|
 | `TF400324` / servidor indisponível | VPN desligada, proxy, certificado SSL | Conecte a VPN, abra a coleção no navegador, `pep doctor` |
-| `TF30063` / sem autenticação | tf.exe de linha de comando sem credencial em cache (o login do Visual Studio não é compartilhado) ou sem permissão | `pep login` em um terminal, entre com a conta da coleção, depois `pep doctor` |
+| `TF30063` / sem autenticação | tf.exe de linha de comando sem credencial em cache (o login do Visual Studio não é compartilhado) ou sem permissão | O PEP CLI abre o login automaticamente em terminal interativo: entre com a conta da coleção e a operação continua. Com `--json`/`--non-interactive`, rode o comando uma vez em um terminal. Se o login não liberar o acesso, confira a permissão da conta no Visual Studio (Manage Connections) |
 | Ferramenta ausente: tf.exe / MSBuild | VS sem Team Explorer, caminho configurado errado | Instale o componente ou ajuste `ferramentas.tfExe` / `msBuild` |
 | Configuração inválida | JSON ou regra violada | `pep config validate` mostra os campos |
 | Versão desconhecida/ambígua | Token parecido ou alias duplicado | Use o id completo (`pep env list`) |

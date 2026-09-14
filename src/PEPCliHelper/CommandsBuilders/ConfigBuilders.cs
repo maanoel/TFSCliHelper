@@ -1,4 +1,5 @@
 using System.Text.Json;
+using PEPCliHelper.Core.Catalog;
 using PEPCliHelper.Core.Common;
 using PEPCliHelper.Core.Configuration;
 using PEPCliHelper.Core.Environments;
@@ -7,50 +8,6 @@ using PEPCliHelper.Presentation;
 using Spectre.Console;
 
 namespace PEPCliHelper.CommandsBuilders;
-
-/// <summary>pep config init (spec 003).</summary>
-public sealed class ConfigInitBuilder : CommandBuilderBase
-{
-  public ConfigInitBuilder(AppServices services)
-    : base(services)
-  {
-  }
-
-  public override Task<int> BuildAsync(CommandLine line, CancellationToken cancellationToken)
-  {
-    var store = Services.ConfigStore;
-    if (store.Exists && !line.Flag("force"))
-    {
-      throw new UsageException(
-        $"Já existe configuração em {store.Path}. Nada foi alterado.",
-        "Revise com 'pep config show'. Para recriar com os defaults use 'pep config init --force' (um backup será criado).",
-        store.Path);
-    }
-
-    var config = PepConfig.CreateDefault();
-    var backup = store.Save(config);
-    Services.InvalidateConfig();
-
-    if (Ui.Json)
-    {
-      Ui.WriteJson(new { arquivo = store.Path, backup, criado = true });
-    }
-    else
-    {
-      Ui.Success($"Configuração criada: {store.Path}");
-      if (backup is not null)
-        Ui.Muted($"  Backup da anterior: {backup}");
-      Ui.Muted($"  Raiz local: {config.LocalRoot} · Coleção: {config.Collection}");
-      Ui.Muted("  Projetos: " + string.Join(", ", config.Projects.Select(p => $"{p.Alias} ({p.Name})")));
-      Ui.Title("Próximos passos");
-      Ui.Hint("pep env discover     lista as pastas de versões e seus mapeamentos (somente leitura)");
-      Ui.Hint("pep env configure    escolhe a versão atual e até 4 legadas");
-      Ui.Hint("pep doctor           valida ferramentas, conexão e mapeamentos");
-    }
-
-    return Task.FromResult(ExitCodes.Success);
-  }
-}
 
 /// <summary>pep config show (spec 003). A configuração não guarda segredos; campos suspeitos seriam rejeitados na carga.</summary>
 public sealed class ConfigShowBuilder : CommandBuilderBase
@@ -66,7 +23,7 @@ public sealed class ConfigShowBuilder : CommandBuilderBase
     if (load.Config is null)
     {
       throw new UsageException(string.Join(" | ", load.Errors),
-        load.Status == ConfigLoadStatus.Missing ? "Execute 'pep config init'." : "Corrija o arquivo e execute 'pep config validate'.", load.Path);
+        load.Status == ConfigLoadStatus.Missing ? "Execute 'pep config auto'." : "Corrija o arquivo e execute 'pep config validate'.", load.Path);
     }
 
     if (Ui.Json)
@@ -97,7 +54,7 @@ public sealed class ConfigShowBuilder : CommandBuilderBase
 
     Ui.Title("Projetos");
     var projects = Ui.NewTable("Alias", "Nome", "Pasta local", "Pasta servidor", "Solução");
-    foreach (var p in config.Projects)
+    foreach (var p in VersionCatalog.PrincipalFirst(config.Projects))
       projects.AddRow(Ui.Escape(p.Alias), Ui.Escape(p.Name), Ui.Escape(p.LocalFolder), Ui.Escape(p.ServerFolder), Ui.Escape(p.Solution ?? "—"));
     Ui.Write(projects);
 
@@ -145,14 +102,14 @@ public sealed class ConfigAutoBuilder : CommandBuilderBase
 
   public override async Task<int> BuildAsync(CommandLine line, CancellationToken cancellationToken)
   {
-    var (baseConfig, _) = LoadBase(Services);
+    var (baseConfig, _) = LoadBase(Services, line.Flag("force"));
     var proposal = new AutoConfigurator(Services.FileSystem).Propose(baseConfig);
 
     if (!proposal.CanApply)
     {
       throw new PreconditionException(
         "Configuração automática indisponível: " + string.Join(" | ", proposal.Errors),
-        "Confira a raiz local em 'pep config show' ou configure manualmente com 'pep env configure'.",
+        "Confira se a pasta abaixo existe e se a raiz local ('raizLocal') está correta em 'pep config show'; depois execute 'pep config auto' novamente.",
         Path.Combine(baseConfig.LocalRoot, AutoConfigurator.CurrentFolder, AutoConfigurator.CurrentRelease));
     }
 
@@ -173,16 +130,18 @@ public sealed class ConfigAutoBuilder : CommandBuilderBase
   }
 
   /// <summary>Configuração existente e válida, ou os defaults quando não há arquivo. Arquivo inválido nunca é sobrescrito.</summary>
-  internal static (PepConfig Config, ConfigLoadStatus Status) LoadBase(AppServices services)
+  /// <param name="force">Arquivo inválido é substituído pelos defaults (o backup é feito ao gravar).</param>
+  internal static (PepConfig Config, ConfigLoadStatus Status) LoadBase(AppServices services, bool force)
   {
     var load = services.LoadConfig();
     return load.Status switch
     {
       ConfigLoadStatus.Loaded => (load.Config!, load.Status),
       ConfigLoadStatus.Missing => (PepConfig.CreateDefault(), load.Status),
+      _ when force => (PepConfig.CreateDefault(), load.Status),
       _ => throw new UsageException(
         "A configuração existente é inválida e não será sobrescrita automaticamente: " + string.Join(" | ", load.Errors),
-        "Corrija o arquivo (veja 'pep config validate') ou recrie com 'pep config init --force' (um backup será criado) e execute 'pep config auto' novamente.",
+        "Corrija o arquivo (veja 'pep config validate') ou recrie com 'pep config auto --force' (um backup será criado).",
         load.Path),
     };
   }
@@ -229,8 +188,7 @@ public sealed class ConfigAutoBuilder : CommandBuilderBase
       ui.Muted($"  Backup da anterior: {backup}");
     ui.Muted($"  Atual + {proposal.ActiveLegacy.Count} legada(s) ativa(s)" + (proposal.InactiveLegacy.Count > 0 ? $", {proposal.InactiveLegacy.Count} desativada(s)." : "."));
     ui.Title("Próximos passos");
-    ui.Hint("pep login           autentica o tf.exe (se ainda não fez)");
-    ui.Hint("pep doctor          valida ferramentas e conexão");
+    ui.Hint("pep doctor          valida ferramentas e conexão (abre o login do TFS se necessário)");
     ui.Hint("pep env validate    confirma os mapeamentos TFVC das versões ativas");
   }
 
@@ -283,7 +241,7 @@ public sealed class ConfigValidateBuilder : CommandBuilderBase
       Ui.Fail($"Configuração {(load.Status == ConfigLoadStatus.Missing ? "ausente" : "inválida")}: {load.Path}");
       foreach (var error in load.Errors)
         Ui.Bullet(error, Ui.Theme.FailColor);
-      Ui.Hint(load.Status == ConfigLoadStatus.Missing ? "Execute 'pep config init'." : "Corrija os campos acima e execute novamente.");
+      Ui.Hint(load.Status == ConfigLoadStatus.Missing ? "Execute 'pep config auto'." : "Corrija os campos acima ou recrie com 'pep config auto --force'.");
     }
 
     return Task.FromResult(valid ? ExitCodes.Success : ExitCodes.Usage);

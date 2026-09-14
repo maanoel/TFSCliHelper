@@ -22,10 +22,20 @@ public sealed class FakeAttachedRunner : IAttachedProcessRunner
 
   public int ExitCode { get; set; }
 
-  public Task<int> RunAsync(Command command, CancellationToken cancellationToken)
+  /// <summary>Efeito do processo (ex.: o login concluído no tf.exe).</summary>
+  public Action? OnRun { get; set; }
+
+  /// <summary>Duração simulada, para sobrepor chamadas concorrentes.</summary>
+  public TimeSpan Delay { get; set; }
+
+  public async Task<int> RunAsync(Command command, CancellationToken cancellationToken)
   {
-    Executed.Add(command);
-    return Task.FromResult(ExitCode);
+    lock (Executed)
+      Executed.Add(command);
+    if (Delay > TimeSpan.Zero)
+      await Task.Delay(Delay, cancellationToken);
+    OnRun?.Invoke();
+    return ExitCode;
   }
 }
 

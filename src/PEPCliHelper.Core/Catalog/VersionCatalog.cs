@@ -79,10 +79,21 @@ public sealed partial class VersionCatalog
       v.Aliases.Select(a => a.Trim()).Where(a => a.Length > 0).ToList(),
       string.IsNullOrWhiteSpace(v.Workspace) ? null : v.Workspace));
 
-    var principalAlias = config.Projects.FirstOrDefault(p => p.Principal)?.Alias ?? DefaultPrincipalAlias;
-    var projects = config.Projects.Select(p => new ProjectDefinition(p.Alias, p.Name, p.LocalFolder, p.ServerFolder, p.Solution,
+    var principalAlias = PrincipalAlias(config.Projects);
+    var projects = PrincipalFirst(config.Projects).Select(p => new ProjectDefinition(p.Alias, p.Name, p.LocalFolder, p.ServerFolder, p.Solution,
       p.Alias.Equals(principalAlias, StringComparison.OrdinalIgnoreCase)));
     return new VersionCatalog(versions, projects);
+  }
+
+  /// <summary>Alias do projeto principal: o marcado com 'principal' ou, sem nenhum, <see cref="DefaultPrincipalAlias"/> (PEP).</summary>
+  public static string PrincipalAlias(IEnumerable<ProjectConfig> projects) =>
+    projects.FirstOrDefault(p => p.Principal)?.Alias ?? DefaultPrincipalAlias;
+
+  /// <summary>PEP (principal) sempre primeiro em qualquer lista exibida; os demais mantêm a ordem da configuração.</summary>
+  public static IReadOnlyList<ProjectConfig> PrincipalFirst(IReadOnlyList<ProjectConfig> projects)
+  {
+    var principalAlias = PrincipalAlias(projects);
+    return projects.OrderByDescending(p => p.Alias.Equals(principalAlias, StringComparison.OrdinalIgnoreCase)).ToList();
   }
 
   public ProjectDefinition? Principal => _projects.FirstOrDefault(p => p.Principal);

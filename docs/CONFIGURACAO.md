@@ -8,15 +8,15 @@
 
 1. argumentos explícitos — `--config <arquivo>` e opções do comando;
 2. configuração do usuário — variável `PEPCLI_CONFIG` ou o arquivo acima;
-3. defaults seguros — criados por `pep config init`.
+3. defaults seguros — usados pela configuração automática.
 
-Nada é criado silenciosamente: sem arquivo, os comandos param e orientam `pep config auto` (ou `pep config init`). No menu interativo, a primeira execução oferece a configuração automática e só grava após a escolha do usuário.
+**Não existe configuração manual** (decisão de 2026-09-14). Na primeira execução — `pep` (menu) ou qualquer comando, sem arquivo ou sem versão atual — o PEP CLI aplica a configuração automática **sem perguntas** e avisa: *"Configuração automática concluída: o PEP CLI está pronto para uso."* Ajuda (`pep help`, `--help`) e comandos `pep config ...` não disparam a primeira configuração.
 
 ## Configuração automática
 
-`pep config auto` — ou a tela **Primeira configuração** ao abrir `pep` sem configuração (ou sem versão atual) — monta o catálogo pela convenção de pastas:
+A primeira execução e `pep config auto` montam o catálogo pela convenção de pastas:
 
-- **Atual:** `<raizLocal>\Atual\Release` (id `atual`, sem aliases). Se a pasta não existe, nada é gravado e a configuração manual (`pep env configure`) é oferecida.
+- **Atual:** `<raizLocal>\Atual\Release` (id `atual`, sem aliases). Se a pasta não existe, nada é gravado; o aviso orienta criar/conferir a pasta e rodar `pep config auto`.
 - **Legadas:** subpastas de `<raizLocal>\Legado` com nome de versão numérica (`12.1.2606`, até 4 segmentos). Outras pastas (`backup`, `12.1.2606-old`) são ignoradas e listadas.
 - **Ordem numérica** por segmento (`System.Version`), não alfabética: `12.1.2606 > 12.1.2602 > 12.1.2510`; `12.1.34 < 12.1.2306`.
 - As **4 mais novas ficam ativas**; as mais antigas entram com `"ativa": false` (visíveis em `env list`, disponíveis para rotação). Nenhuma pasta é criada, movida ou excluída.
@@ -24,8 +24,8 @@ Nada é criado silenciosamente: sem arquivo, os comandos param e orientam `pep c
 - `caminhoServidor` pela convenção `<raizServidor>/<pasta relativa>`, **sem consultar o TFVC** — confirme com `pep env validate`.
 - Preserva coleção, ferramentas, projetos, arquivos locais, apresentação e `raizServidor`; mantém o `workspace` de versões já cadastradas (mesmo id ou mesma pasta). Versões antigas sem pasta correspondente permanecem, desativadas.
 - Pasta de versão sem nenhum projeto configurado entra com aviso "sem projetos".
-- Arquivo existente **inválido** nunca é sobrescrito: corrija-o ou use `pep config init --force`.
-- Grava com backup (`config.json.<data>.bak`) após confirmação (Enter aceita; `--yes` em scripts).
+- Arquivo existente **inválido** nunca é sobrescrito automaticamente: corrija-o ou use `pep config auto --force` (recria com backup).
+- Grava com backup (`config.json.<data>.bak`). Na primeira execução grava direto; `pep config auto` mostra a proposta e grava com Enter (`--yes` em scripts).
 
 ## Modelo
 
@@ -70,7 +70,7 @@ Configurações antigas sem nenhum `principal` tratam `back` (Sau-PEP) como prin
 
 ### Convenção de caminho TFVC
 
-Quando o mapeamento não informa o caminho de servidor, `env discover`/`env configure` usam a convenção da equipe, sem perguntar:
+Quando o mapeamento não informa o caminho de servidor, `config auto`/`env discover` usam a convenção da equipe, sem perguntar:
 
 | Pasta local | Caminho TFVC |
 |---|---|
@@ -100,29 +100,12 @@ Valide com `pep config validate`.
 | alias em duas versões | **erro de ambiguidade** |
 | versão desativada | erro informando que está desativada |
 
-## Cadastrar nova versão (rotação)
+## Nova versão (rotação)
 
-Exemplo: sai a 12.1.2614 como atual; a 12.1.2610 vira legada; a 12.1.2602 deixa de ser usada.
+A rotação segue as pastas; não há seleção manual.
 
-1. Garanta que as pastas existem e estão mapeadas pelo Visual Studio (o CLI não cria mapeamentos).
-2. `pep env discover` — confira o caminho TFVC efetivo de cada pasta.
-3. `pep env configure`
-   - escolha a pasta da **atual** e informe o id (`12.1.2614`);
-   - marque até 4 legadas ativas (inclua a pasta da antiga atual, se ela foi movida para `Legado`, ou mantenha `Atual\Release` com o id antigo);
-   - revise a tabela *Catálogo revisado* e confirme.
-4. `pep env validate`.
+1. Garanta que as pastas existem em `<raizLocal>\Atual\Release` e `<raizLocal>\Legado\<versão>` e estão mapeadas pelo Visual Studio (o CLI não cria mapeamentos).
+2. `pep config auto` — a atual continua `Atual\Release`; as 4 legadas mais novas ficam ativas e as mais antigas, desativadas.
+3. `pep env validate`.
 
-Não interativo:
-
-```powershell
-pep env configure --atual 12.1.2614 --legado 12.1.2610 --legado 12.1.2606 --yes
-```
-
-O backup do arquivo anterior fica ao lado (`config.json.<data>.bak`).
-
-## Desativar uma legada
-
-- Pelo `pep env configure`, desmarque a versão; ou
-- edite o arquivo e defina `"ativa": false`.
-
-Versões desativadas **permanecem** no arquivo, não participam de `get all`, `build all`, `--all-legacy` e **nenhuma pasta é excluída**.
+O backup do arquivo anterior fica ao lado (`config.json.<data>.bak`). Versões desativadas **permanecem** no arquivo, não participam de `get all`, `build all`, `--all-legacy` e **nenhuma pasta é excluída**.

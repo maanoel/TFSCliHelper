@@ -1,4 +1,4 @@
-using PEPCliHelper.Core.Catalog;
+﻿using PEPCliHelper.Core.Catalog;
 using PEPCliHelper.Core.Common;
 using PEPCliHelper.Core.Execution;
 using PEPCliHelper.Core.FileSystem;
@@ -25,6 +25,9 @@ public sealed class BuildTargetPlan
   public List<string> Blockers { get; } = [];
 
   public List<string> Warnings { get; } = [];
+
+  /// <summary>RM.Host em execução a partir da versão; encerrados por <see cref="BuildService.StopHosts"/> antes do build.</summary>
+  public List<ProcessInfo> HostsToStop { get; } = [];
 
   public bool IsReady => Blockers.Count == 0;
 }
@@ -75,7 +78,7 @@ public sealed record BuildExecutionResult(IReadOnlyList<BuildTargetResult> Targe
   }
 }
 
-/// <summary>Build com MSBuild (spec 009). Sequencial, sem get, sem encerrar processos.</summary>
+/// <summary>Build com MSBuild (spec 009). Sequencial, sem get; encerra o RM.Host da versão antes (como pep kill host).</summary>
 public sealed class BuildService
 {
   private readonly ICommandExecutor _executor;
@@ -113,9 +116,8 @@ public sealed class BuildService
 
       foreach (var host in _localTools.RunningFrom(location.Version, LocalToolsService.HostProcessName))
       {
-        target.Blockers.Add(
-          $"RM.Host.exe (PID {host.Pid}) está em execução a partir desta versão e pode bloquear a saída do build. " +
-          $"Encerre com 'pep kill host --pid {host.Pid}' e tente novamente.");
+        target.HostsToStop.Add(host);
+        target.Warnings.Add($"RM.Host.exe (PID {host.Pid}) em execução nesta versão: será encerrado antes do build (como 'pep kill host').");
       }
 
       if (_localTools.HasInaccessibleProcesses(LocalToolsService.HostProcessName))
@@ -123,6 +125,38 @@ public sealed class BuildService
     }
 
     return plan;
+  }
+
+  /// <summary>
+  /// Encerra de forma graciosa (mesma rotina de 'pep kill host') os RM.Host das versões prontas.
+  /// Se algum não encerrar, os alvos daquela versão ficam bloqueados; nunca força sozinho.
+  /// </summary>
+  public IReadOnlyList<TerminationResult> StopHosts(BuildPlan plan)
+  {
+    var results = new List<TerminationResult>();
+    foreach (var group in plan.Targets.Where(t => t.IsReady && t.HostsToStop.Count > 0).GroupBy(t => t.Location.Version.Id, StringComparer.OrdinalIgnoreCase))
+    {
+      var version = group.First().Location.Version;
+      var failures = new List<TerminationResult>();
+      foreach (var host in group.SelectMany(t => t.HostsToStop).DistinctBy(p => p.Pid))
+      {
+        var result = _localTools.Terminate(new HostCandidate(host, version, HostConfidence.Alta), force: false);
+        results.Add(result);
+        if (!result.Terminated)
+          failures.Add(result);
+      }
+
+      foreach (var target in group)
+      {
+        foreach (var failure in failures)
+        {
+          var pid = failure.Candidate.Process.Pid;
+          target.Blockers.Add($"RM.Host.exe (PID {pid}) não foi encerrado: {failure.Message} Encerre com 'pep kill host --pid {pid} --force' e tente novamente.");
+        }
+      }
+    }
+
+    return results;
   }
 
   public async Task<BuildExecutionResult> ExecuteAsync(BuildPlan plan, string? configuration, bool continueOnFailure, IOperationLog log, CancellationToken cancellationToken)

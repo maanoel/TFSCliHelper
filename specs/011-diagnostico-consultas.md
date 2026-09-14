@@ -31,8 +31,14 @@ pep changeset show <id> [--project back|sau --source <versao>] [--json]
 - `pending list`: pending changes por versão/projeto (todas ativas se versão omitida).
 - `changeset show`: cabeçalho e itens; com `--project/--source`, classifica incluídos e excluídos do escopo.
 - Exit doctor: 0 sem falhas · 3 com falhas.
+- Login automático do TFS (decisão do usuário, 2026-09-14): não há comando `login`. Quando qualquer operação TFVC retorna `TF30063`
+  em terminal interativo, o CLI roda `tf workspaces /collection:<coleção>` sem `/noprompt` no terminal do usuário, confirma com
+  `tf workspaces` e repete a operação uma vez. No máximo uma tentativa de login por execução (inclusive com destinos em paralelo).
+  `tf merge`/`tf get` só são repetidos se a saída não citar itens (nada processado). Sem terminal interativo (`--json`,
+  `--non-interactive`) não há login: falha com orientação. O CLI não recebe nem grava senha/token.
 
 ## Cenários de aceite
+- **Dado** tf.exe sem credencial (TF30063) em terminal interativo **Quando** `doctor` ou `merge --dry-run` **Então** o login do TFS abre uma única vez e a operação continua.
 - **Dado** servidor indisponível **Quando** `doctor` **Então** FALHA em conexão com orientação (VPN/proxy) e demais checks locais continuam.
 - **Dado** pasta cloaked **Quando** `workspace inspect 2606 --project back` **Então** estado cloaked explicado.
 - **Dado** `changeset show 861799 --project back --source atual` **Quando** itens de outros projetos **Então** aparecem como excluídos.

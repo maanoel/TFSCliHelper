@@ -42,7 +42,7 @@ public sealed class DiscoveryService
     foreach (var (folder, looksCurrent) in CandidateFolders(config))
     {
       cancellationToken.ThrowIfCancellationRequested();
-      var projects = config.Projects.Where(p => _fileSystem.DirectoryExists(Path.Combine(folder, p.LocalFolder))).ToList();
+      var projects = VersionCatalog.PrincipalFirst(config.Projects).Where(p => _fileSystem.DirectoryExists(Path.Combine(folder, p.LocalFolder))).ToList();
       if (projects.Count == 0)
         continue;
 

@@ -1,7 +1,8 @@
-using PEPCliHelper.Core.Build;
+﻿using PEPCliHelper.Core.Build;
 using PEPCliHelper.Core.Catalog;
 using PEPCliHelper.Core.Common;
 using PEPCliHelper.Core.History;
+using PEPCliHelper.Core.LocalTools;
 using PEPCliHelper.Infrastructure;
 using PEPCliHelper.Presentation;
 
@@ -19,7 +20,7 @@ public enum BuildScope
   Version,
 }
 
-/// <summary>pep build | pep build all | pep build version &lt;versao&gt; (spec 009). Um único fluxo: seleção → plano → confirmação → execução.</summary>
+/// <summary>pep build | pep build all | pep build version &lt;versao&gt; (spec 009). Um único fluxo: seleção → plano → execução (sem confirmação).</summary>
 public sealed class BuildBuilder : CommandBuilderBase
 {
   private readonly BuildScope _scope;
@@ -59,29 +60,34 @@ public sealed class BuildBuilder : CommandBuilderBase
     if (!Ui.Json)
       PlanRenderer.BuildPlan(Ui, plan, dryRun: false);
 
+    // Sempre antes do build: encerra o RM.Host das versões (mesma rotina de 'pep kill host', graciosa).
+    IReadOnlyList<TerminationResult> stoppedHosts = plan.CanExecute && plan.Targets.Any(t => t.HostsToStop.Count > 0)
+      ? await Ui.WithStatusAsync("Encerrando RM.Host", _ => Task.Run(() => service.StopHosts(plan), cancellationToken))
+      : [];
+    foreach (var stop in stoppedHosts)
+    {
+      history.Step($"kill host PID {stop.Candidate.Process.Pid}", stop.Message);
+      if (!Ui.Json)
+        Ui.Markup($"  {Ui.Theme.State(stop.Terminated ? StateKind.Ok : StateKind.Warn, $"RM.Host PID {stop.Candidate.Process.Pid}")} {Ui.Escape(stop.Candidate.VersionLabel)} · {Ui.Escape(stop.Message)}");
+    }
+
     if (!plan.CanExecute)
     {
       if (Ui.Json)
-        Ui.WriteJson(new { plano = JsonViews.BuildPlan(plan), resultado = (object?)null });
+        Ui.WriteJson(new { plano = JsonViews.BuildPlan(plan), hostsEncerrados = JsonViews.StoppedHosts(stoppedHosts), resultado = (object?)null });
       else
         Ui.Fail("Nenhuma solução pronta para build. Nada foi executado.");
       history.Complete(ExitCodes.Precondition, "bloqueado");
       return ExitCodes.Precondition;
     }
 
-    if (!await ConfirmAsync($"Compilar {plan.Targets.Count(t => t.IsReady)} solução(ões) em sequência?", cancellationToken))
-    {
-      Ui.Warn("Build cancelado. Nada foi executado.");
-      history.Complete(ExitCodes.Cancelled, "cancelado");
-      return ExitCodes.Cancelled;
-    }
-
+    // Sem confirmação: build não altera o TFVC nem descarta nada; Ctrl+C interrompe.
     var result = await Ui.WithStatusAsync("Compilando", sink =>
       service.ExecuteAsync(plan, line.Option("configuration"), line.Flag("continue-on-failure"),
         new ConsoleOperationLog(sink, history, Ui.Theme), cancellationToken));
 
     if (Ui.Json)
-      Ui.WriteJson(new { plano = JsonViews.BuildPlan(plan), resultado = JsonViews.BuildResult(result) });
+      Ui.WriteJson(new { plano = JsonViews.BuildPlan(plan), hostsEncerrados = JsonViews.StoppedHosts(stoppedHosts), resultado = JsonViews.BuildResult(result) });
     else
       PlanRenderer.BuildResult(Ui, result);
 
@@ -128,12 +134,18 @@ public sealed class BuildBuilder : CommandBuilderBase
 
   private async Task<List<ProjectDefinition>> SelectProjectsAsync(VersionCatalog catalog, CancellationToken cancellationToken)
   {
-    var ordered = catalog.Projects.OrderByDescending(p => p.Principal).ToList();
-    var selected = await Ui.MultiSelectAsync("Quais projetos compilar?", ordered, ProjectLabel, cancellationToken, ordered);
+    var ordered = catalog.Projects; // PEP (principal) sempre primeiro.
+    // Sau-Saúde vem desmarcado: compilá-lo é exceção e o usuário marca quando precisar.
+    var preselected = ordered.Where(p => !IsSaude(p)).ToList();
+    var selected = await Ui.MultiSelectAsync("Quais projetos compilar?", ordered, ProjectLabel, cancellationToken, preselected);
     if (selected.Count == 0)
       throw new OperationCanceledException("Nenhum projeto selecionado.");
     return selected;
   }
+
+  private static bool IsSaude(ProjectDefinition project) =>
+    project.Alias.Equals("sau", StringComparison.OrdinalIgnoreCase)
+    || project.Name.Equals("Sau-Saude", StringComparison.OrdinalIgnoreCase);
 
   private static string ProjectLabel(ProjectDefinition project) =>
     $"{project.Alias} · {project.Name} ({project.Solution ?? "sem solução"})" + (project.Principal ? " — principal, compila primeiro" : string.Empty);

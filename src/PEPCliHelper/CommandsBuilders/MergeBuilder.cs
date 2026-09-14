@@ -235,7 +235,7 @@ public sealed class MergeBuilder : CommandBuilderBase
     {
       var legacy = catalog.ActiveLegacy.Where(v => !v.Id.Equals(source.Id, StringComparison.OrdinalIgnoreCase)).ToList();
       if (legacy.Count == 0)
-        throw new PreconditionException("Não há versões legadas ativas no catálogo além da origem.", "Configure legadas com 'pep env configure'.");
+        throw new PreconditionException("Não há versões legadas ativas no catálogo além da origem.", "Crie as pastas em <raiz>\\Legado e execute 'pep config auto'.");
       return legacy;
     }
 
@@ -258,7 +258,7 @@ public sealed class MergeBuilder : CommandBuilderBase
 
     var options = catalog.Active.Where(v => !v.Id.Equals(source.Id, StringComparison.OrdinalIgnoreCase)).ToList();
     if (options.Count == 0)
-      throw new PreconditionException("Não há outras versões ativas para usar como destino.", "Configure legadas com 'pep env configure'.");
+      throw new PreconditionException("Não há outras versões ativas para usar como destino.", "Crie as pastas em <raiz>\\Legado e execute 'pep config auto'.");
 
     var selected = await Ui.MultiSelectAsync("Destinos do merge", options, v => v.Label, cancellationToken);
     if (selected.Count == 0)

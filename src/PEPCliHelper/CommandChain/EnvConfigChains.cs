@@ -31,30 +31,6 @@ public sealed class EnvDiscoverChain : ICommandChain
   public ICommandBuilder CreateBuilder(AppServices services) => new EnvDiscoverBuilder(services);
 }
 
-public sealed class EnvConfigureChain : ICommandChain
-{
-  public CommandHelp Help { get; } = new()
-  {
-    Path = ["env", "configure"],
-    Category = "Ambientes e configuração",
-    Summary = "Define a versão atual e até 4 legadas ativas (rotação). Grava com revisão e confirmação.",
-    Details = "Altera somente o catálogo: não move nem exclui pastas, não altera branches nem workspaces.",
-    Options =
-    [
-      new OptionSpec("atual", "<id>", "Versão atual (modo não interativo)."),
-      new OptionSpec("legado", "<id>", "Legada ativa (modo não interativo).", Repeatable: true),
-      new OptionSpec("offline", null, "Não consulta o TFVC durante a descoberta."),
-    ],
-    Examples =
-    [
-      new("pep env configure", "Seleção guiada."),
-      new("pep env configure --atual 12.1.2610 --legado 12.1.2606 --legado 12.1.2602 --yes", "Rotação por script."),
-    ],
-  };
-
-  public ICommandBuilder CreateBuilder(AppServices services) => new EnvConfigureBuilder(services);
-}
-
 public sealed class EnvValidateChain : ICommandChain
 {
   public CommandHelp Help { get; } = new()
@@ -68,20 +44,6 @@ public sealed class EnvValidateChain : ICommandChain
   public ICommandBuilder CreateBuilder(AppServices services) => new EnvValidateBuilder(services);
 }
 
-public sealed class ConfigInitChain : ICommandChain
-{
-  public CommandHelp Help { get; } = new()
-  {
-    Path = ["config", "init"],
-    Category = "Ambientes e configuração",
-    Summary = "Cria o arquivo de configuração com defaults seguros.",
-    Options = [new OptionSpec("force", null, "Recria mesmo se existir (faz backup).")],
-    Examples = [new("pep config init", "Primeiro uso.")],
-  };
-
-  public ICommandBuilder CreateBuilder(AppServices services) => new ConfigInitBuilder(services);
-}
-
 public sealed class ConfigAutoChain : ICommandChain
 {
   public CommandHelp Help { get; } = new()
@@ -90,11 +52,14 @@ public sealed class ConfigAutoChain : ICommandChain
     Category = "Ambientes e configuração",
     Summary = "Configuração automática: <raiz>\\Atual\\Release como atual e as 4 legadas mais novas de <raiz>\\Legado ativas.",
     Details = "Legadas ordenadas pelo número da versão; as mais antigas ficam desativadas. Caminhos TFVC pela convenção, sem consultar o servidor "
-      + "(confirme com 'pep env validate'). Mantém coleção, ferramentas e projetos; faz backup do arquivo anterior. Não cria, move nem exclui pastas.",
+      + "(confirme com 'pep env validate'). Mantém coleção, ferramentas e projetos; faz backup do arquivo anterior. Não cria, move nem exclui pastas. "
+      + "Na primeira execução do 'pep' é aplicada automaticamente, sem perguntas.",
+    Options = [new OptionSpec("force", null, "Substitui uma configuração inválida pelos defaults detectados (faz backup).")],
     Examples =
     [
       new("pep config auto", "Mostra a proposta e grava após Enter."),
       new("pep config auto --yes", "Grava sem perguntar."),
+      new("pep config auto --force --yes", "Recria a partir de uma configuração inválida (com backup)."),
     ],
   };
 

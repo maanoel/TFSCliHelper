@@ -124,6 +124,11 @@ public static class RemovedChains
   private const string FrontReason = "o front do PEP não é mais gerenciado pelo PEP CLI (migrou para o Git).";
   private const string FrontAlternative = "Use o repositório Git do front diretamente (git/VS Code).";
 
+  private const string ManualConfigReason =
+    "a configuração manual não existe mais: na primeira execução o PEP CLI se configura sozinho (Atual\\Release e as 4 legadas mais novas).";
+
+  private const string ManualConfigAlternative = "Para detectar as versões novamente, execute 'pep config auto'.";
+
   public static IReadOnlyList<ICommandChain> All { get; } =
   [
     new RemovedChain(["open", "front"], FrontReason, FrontAlternative),
@@ -133,5 +138,10 @@ public static class RemovedChains
     new RemovedChain(["clear"], "o modo de prompt digitado foi substituído pelo menu interativo.", "Execute 'pep' sem argumentos para o menu."),
     new RemovedChain(["cls"], "o modo de prompt digitado foi substituído pelo menu interativo.", "Execute 'pep' sem argumentos para o menu."),
     new RemovedChain(["exit"], "o modo de prompt digitado foi substituído pelo menu interativo.", "No menu, escolha 'Sair'."),
+    new RemovedChain(["env", "configure"], ManualConfigReason, ManualConfigAlternative),
+    new RemovedChain(["config", "init"], ManualConfigReason, ManualConfigAlternative),
+    new RemovedChain(["login"],
+      "o login do TFS agora é automático: quando o tf.exe pedir autenticação (TF30063), o PEP CLI abre o login e continua a operação.",
+      "Execute normalmente o comando desejado (ex.: 'pep doctor' ou 'pep merge') em um terminal interativo."),
   ];
 }

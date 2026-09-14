@@ -37,6 +37,8 @@ Propaga **um** changeset da origem para um ou mais destinos. Resultado em Pendin
 
 Comportamento: por padrão o merge roda em **todos** os destinos prontos, mesmo após falha ou conflito em um deles; destinos bloqueados no plano são ignorados e listados no resumo (interativo pergunta antes). Rede/autenticação, cancelamento e resultado indeterminado sempre interrompem. A pré-verificação avalia até 4 destinos em paralelo (somente consultas); a aplicação é sempre sequencial. Com plano de menos de 10 minutos, a revalidação antes do merge consulta apenas pending changes e arquivos graváveis sem checkout; plano mais antigo é revalidado por completo. O resumo mostra "Merge aplicado em X de Y destinos selecionados" (JSON: `aplicados`, `selecionados`).
 
+Sem credencial do tf.exe (`TF30063`), o login do TFS abre automaticamente em terminal interativo e o merge continua (ver *Login automático do TFS* em Diagnóstico). Um `tf merge` que falhar por autenticação só é repetido se a saída não citar nenhum item, ou seja, se nada foi processado; o mesmo vale para `tf get`.
+
 Sintaxe antiga aceita: `pep merge <projeto> <versao> <changeset>` — a versão é a **origem**; destinos são escolhidos no terminal ou exigidos por opção.
 
 Estados por destino: *Aplicado com pending changes* · *Sem alterações aplicáveis* · *Já integrado* · *Aplicado com conflitos* · *Bloqueado* · *Falhou* · *Cancelado* · *Não iniciado* · *Indeterminado — inspecionar*.
@@ -56,11 +58,11 @@ Saída: 0 todos aplicados/já integrados · 3 nada executado por bloqueio · 4 f
 
 ### `pep build` · `pep build all` · `pep build version <versao>`
 
-MSBuild sequencial. Não faz get e não encerra o RM.Host (bloqueia se o host da versão estiver aberto).
+MSBuild sequencial. Não faz get. **Antes de compilar, encerra o RM.Host das versões do build** com a mesma rotina de `pep kill host` (graciosa, sem pergunta); se algum host não encerrar, só aquela versão fica bloqueada com orientação para `pep kill host --pid <n> --force`. Hosts de outras versões não são tocados. Não pede confirmação: mostra o plano e compila direto (Ctrl+C interrompe; `--dry-run` só mostra o plano).
 
 **Ordem:** versões atual → legadas (ordem do catálogo); em cada versão o projeto **principal** (PEP, `RM.Pep.sln`) compila primeiro e depois os demais selecionados na ordem da configuração (Saúde, `Sau-Saude.sln`). A coluna *Ordem* do plano mostra a sequência.
 
-`pep build` sem `--version`/`--all`, em terminal interativo, pergunta as versões (atual já marcada) e os projetos (todos marcados; Espaço desmarca). Nada marcado cancela (130). Em modo não interativo, `--version` ou `--all` é obrigatório (exit 2).
+`pep build` sem `--version`/`--all`, em terminal interativo, pergunta as versões (atual já marcada) e os projetos (todos marcados, exceto o Sau-Saúde, que vem desmarcado; Espaço marca/desmarca). Nada marcado cancela (130). Em modo não interativo, `--version` ou `--all` é obrigatório (exit 2).
 
 | Opção | Descrição |
 |---|---|
@@ -83,11 +85,10 @@ pep build --all --project sau                        # só o Saúde, todas as ve
 |---|---|
 | `pep env list` | Catálogo: atual, legadas ativas e desativadas |
 | `pep env discover [--offline]` | Pastas candidatas em `<raiz>\Atual` e `<raiz>\Legado` + mapeamento. Somente leitura |
-| `pep env configure` | Seleção guiada da atual e até 4 legadas; revisão e confirmação antes de gravar |
-| `pep env configure --atual <id> --legado <id>... --yes` | Rotação não interativa |
 | `pep env validate` | Pastas e mapeamentos das versões ativas |
-| `pep config auto [--yes]` | Configuração automática: `<raiz>\Atual\Release` atual e as 4 legadas mais novas de `<raiz>\Legado` ativas (ordem numérica), mais antigas desativadas. Sem consulta ao TFVC; confirmação com Enter; backup |
-| `pep config init [--force]` | Cria a configuração com defaults (backup com `--force`) |
+| `pep config auto [--yes] [--force]` | Configuração automática: `<raiz>\Atual\Release` atual e as 4 legadas mais novas de `<raiz>\Legado` ativas (ordem numérica), mais antigas desativadas. Sem consulta ao TFVC; confirmação com Enter; backup. `--force` recria a partir de um arquivo inválido. **Na primeira execução é aplicada sozinha, sem perguntas** |
+
+Não existe configuração manual: `pep env configure` e `pep config init` foram removidos (exit 2, orientam `pep config auto`).
 | `pep config show` | Configuração efetiva e arquivo usado |
 | `pep config validate` | 0 válida, 2 inválida |
 
@@ -96,11 +97,12 @@ pep build --all --project sau                        # só o Saúde, todas as ve
 | Comando | Descrição |
 |---|---|
 | `pep doctor` | Configuração, ferramentas, conexão/autenticação, catálogo, mapeamentos, soluções, disco, histórico. Não corrige nada |
-| `pep login` | Autentica o tf.exe na coleção: roda `tf workspaces /collection` no seu terminal, sem `/noprompt`, para o login aparecer. Uma vez por máquina; resolve TF30063. Não grava senha/token |
 | `pep workspace list` | Workspaces da coleção |
 | `pep workspace inspect <versao> [--project]` | Mapeamento efetivo, cloaking, divergência e como corrigir |
 | `pep pending list [versao] [--project]` | Pending changes |
 | `pep changeset show <id> [--project --source]` | Itens do changeset; incluídos/excluídos do escopo |
+
+**Login automático do TFS:** quando o tf.exe responde sem credencial (`TF30063`), o PEP CLI — em terminal interativo — roda `tf workspaces /collection:<coleção>` sem `/noprompt` no seu terminal, para a janela de login do tf.exe aparecer, confirma o acesso e repete a consulta. Uma tentativa por execução (mesmo com consultas em paralelo); a credencial fica no cache do tf.exe, o PEP CLI não recebe nem grava senha/token. Com `--json`/`--non-interactive` não há login: o comando falha com a orientação e basta rodá-lo uma vez em um terminal interativo.
 
 ## Ferramentas locais
 
@@ -122,6 +124,21 @@ pep build --all --project sau                        # só o Saúde, todas as ve
 | `pep help [comando]` | Ajuda |
 | `pep version` | Versão, runtime, ferramentas, configuração e catálogo |
 
+## Prompt de comandos (menu)
+
+No menu `pep`, **Prompt de comandos (digitar comandos pep)** abre um prompt `pep>` dentro do CLI:
+
+```text
+pep> merge --project back --source atual --target 2606 --changeset 669997 --dry-run
+pep> pep build --version 2606
+pep> sair
+```
+
+- Aceita qualquer comando do PEP CLI, com ou sem o prefixo `pep`, incluindo opções globais (`--yes`, `--json`, `--help`). Aspas duplas agrupam argumentos com espaço.
+- Usa o mesmo despacho do modo por argumentos: mesmas validações, planos e confirmações.
+- **Não executa comandos do Windows/shell** (ex.: `dir`, `del`): retornam "Comando desconhecido".
+- `sair`, `voltar`, `exit` ou Ctrl+C voltam ao menu.
+
 ## Removidos
 
-`merge front`, `open front`, `open podoc`, `kill all`, `cmd`, `clear`, `cls`, `exit` — ver [MIGRACAO.md](MIGRACAO.md).
+`merge front`, `open front`, `open podoc`, `kill all`, `cmd`, `clear`, `cls`, `exit`, `login` (o login do TFS agora é automático) — ver [MIGRACAO.md](MIGRACAO.md).

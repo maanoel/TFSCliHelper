@@ -88,7 +88,7 @@ public class BuildServiceTests
   }
 
   [Fact]
-  public async Task Plan_HostDaVersaoEmExecucao_BloqueiaSemEncerrar()
+  public async Task Plan_HostDaVersaoEmExecucao_AvisaQueSeraEncerradoSemEncerrarNoPlano()
   {
     var catalog = TestData.Catalog();
     _fileSystem.AddFile(@"C:\LR\Atual\Release\Sau-PEP\RM.Pep.sln");
@@ -96,9 +96,46 @@ public class BuildServiceTests
 
     var plan = await Service().PlanAsync([catalog.Locate(catalog.Current!, catalog.FindProject("back")!)], CancellationToken.None);
 
-    Assert.False(plan.CanExecute);
-    Assert.Contains(plan.Targets.Single().Blockers, b => b.Contains("kill host --pid 42"));
+    Assert.True(plan.CanExecute);
+    Assert.Contains(plan.Targets.Single().Warnings, w => w.Contains("PID 42") && w.Contains("será encerrado"));
+    Assert.Empty(_processes.GracefulRequests);
     Assert.Empty(_processes.Killed);
+  }
+
+  [Fact]
+  public async Task StopHosts_HostDaVersaoCompilada_EncerraGraciosamenteSomenteEle()
+  {
+    var catalog = TestData.Catalog();
+    _fileSystem.AddFile(@"C:\LR\Atual\Release\Sau-PEP\RM.Pep.sln");
+    _processes.Processes.Add(new ProcessInfo(42, "RM.Host", @"C:\LR\Atual\Release\Bin\RM.Host.exe", null, false));
+    _processes.Processes.Add(new ProcessInfo(43, "RM.Host", @"C:\LR\Legado\12.1.2606\Bin\RM.Host.exe", null, false));
+    var service = Service();
+    var plan = await service.PlanAsync([catalog.Locate(catalog.Current!, catalog.FindProject("back")!)], CancellationToken.None);
+
+    var results = service.StopHosts(plan);
+
+    Assert.True(Assert.Single(results).Terminated);
+    Assert.Equal([42], _processes.GracefulRequests);
+    Assert.Empty(_processes.Killed);
+    Assert.True(plan.CanExecute);
+  }
+
+  [Fact]
+  public async Task StopHosts_HostNaoEncerraGraciosamente_BloqueiaVersaoSemForcar()
+  {
+    var catalog = TestData.Catalog();
+    _fileSystem.AddFile(@"C:\LR\Atual\Release\Sau-PEP\RM.Pep.sln");
+    _processes.Processes.Add(new ProcessInfo(42, "RM.Host", @"C:\LR\Atual\Release\Bin\RM.Host.exe", null, false));
+    _processes.IgnoresGracefulClose.Add(42);
+    var service = Service();
+    var plan = await service.PlanAsync([catalog.Locate(catalog.Current!, catalog.FindProject("back")!)], CancellationToken.None);
+
+    var results = service.StopHosts(plan);
+
+    Assert.False(Assert.Single(results).Terminated);
+    Assert.Empty(_processes.Killed);
+    Assert.False(plan.CanExecute);
+    Assert.Contains(plan.Targets.Single().Blockers, b => b.Contains("kill host --pid 42 --force"));
   }
 
   [Fact]
@@ -150,6 +187,18 @@ public class BuildOrderTests
     BuildOrder.Arrange(catalog, versions, aliases.Select(a => catalog.FindProject(a)!))
       .Select(l => $"{l.Version.Id}:{l.Project.Alias}")
       .ToList();
+
+  [Fact]
+  public void Catalogo_ConfigComSauPrimeiro_PepPrimeiroNaListaDeProjetos()
+  {
+    var config = LegacyConfigSauFirst();
+
+    var catalog = VersionCatalog.FromConfig(config);
+
+    Assert.Equal(["back", "sau"], catalog.Projects.Select(p => p.Alias));
+    Assert.Equal(["back", "sau"], VersionCatalog.PrincipalFirst(config.Projects).Select(p => p.Alias));
+    Assert.Equal("sau", config.Projects[0].Alias);
+  }
 
   [Fact]
   public void Arrange_ConfigLegadaComSauPrimeiroSemPrincipal_BackPrimeiroEmCadaVersao()

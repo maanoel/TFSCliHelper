@@ -87,7 +87,7 @@ public sealed class ConfigStore
     string? backup = null;
     if (_fileSystem.FileExists(Path))
     {
-      // Nome único mesmo com gravações no mesmo segundo (ex.: config init seguido de env configure).
+      // Nome único mesmo com gravações no mesmo segundo (ex.: duas execuções de config auto).
       var stamp = DateTime.Now.ToString("yyyyMMddHHmmssfff");
       backup = $"{Path}.{stamp}.bak";
       for (var attempt = 1; _fileSystem.FileExists(backup); attempt++)

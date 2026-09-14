@@ -62,7 +62,7 @@ Correções feitas a partir da saída real do tf.exe 17.14 pt-BR:
 
 | Achado | Correção |
 |---|---|
-| `tf.exe` de linha de comando sem credencial (TF30063) | Comando `pep login` (tf workspaces sem /noprompt no terminal do usuário) |
+| `tf.exe` de linha de comando sem credencial (TF30063) | Login automático em TF30063 (tf workspaces sem /noprompt no terminal do usuário, uma vez por execução, depois repete a consulta); o antigo comando de login foi removido. Pendente: homologar em terminal real (janela de login e spinner) |
 | `Opção /version não pode ser combinada com opção /candidate` | `merge /candidate` sem `/version`; changeset procurado na lista |
 | `merge /preview` exit 1 `Conflito (mesclar, editar)` bloqueava | Conflito previsto vira aviso; só falha real bloqueia |
 | `resolve /preview` lista conflito com caminho **relativo** (exit 1) | Parser usa exit code (0 = sem conflitos) e completa o caminho |

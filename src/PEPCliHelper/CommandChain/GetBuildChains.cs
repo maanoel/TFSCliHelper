@@ -44,7 +44,7 @@ internal static class BuildOptions
 {
   public const string OrderDetails =
     "Ordem: versões atual → legadas; em cada versão o projeto principal (PEP, 'principal' na configuração) compila primeiro, " +
-    "depois os demais selecionados. Não executa get e não encerra o RM.Host: se o host da versão estiver aberto, o build é bloqueado com orientação.";
+    "depois os demais selecionados. Compila sem pedir confirmação (Ctrl+C interrompe). Não executa get. Antes de compilar encerra o RM.Host das versões selecionadas (como 'pep kill host', gracioso); se não encerrar, a versão é bloqueada com orientação.";
 
   public static readonly IReadOnlyList<OptionSpec> Shared =
   [
@@ -62,7 +62,7 @@ public sealed class BuildChain : ICommandChain
     Path = ["build"],
     Category = "Get e build",
     Summary = "Compila as versões e projetos selecionados (MSBuild, sequencial; PEP sempre primeiro).",
-    Details = "Sem --version/--all, em terminal interativo pergunta as versões (atual marcada) e os projetos (todos marcados). " + BuildOptions.OrderDetails,
+    Details = "Sem --version/--all, em terminal interativo pergunta as versões (atual marcada) e os projetos (todos marcados, exceto Sau-Saúde)." + BuildOptions.OrderDetails,
     Options =
     [
       new OptionSpec("version", "<versao>", "Versão a compilar (repetível; ex.: atual, 2606).", Repeatable: true),

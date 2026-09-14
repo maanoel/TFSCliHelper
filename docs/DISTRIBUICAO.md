@@ -55,7 +55,7 @@ O `.exe` não é assinado: o SmartScreen pode exibir "O Windows protegeu o compu
 
 1. Copie a pasta publicada para um local compartilhado (drive da equipe) e dali para `C:\Ferramentas\pep`.
 2. Adicione ao `PATH` do usuário.
-3. `pep config init` → `pep env discover` → `pep env configure` → `pep doctor`.
+3. `pep` — a primeira execução se configura sozinha e avisa quando está pronta. Opcional: `pep doctor`.
 
 ## Atualização (instalação manual)
 

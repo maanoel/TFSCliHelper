@@ -58,4 +58,5 @@ Legenda: ✅ concluída · 🔄 em andamento · ⏳ a fazer · ⛔ bloqueada · 
 | ✅ C13 | Revisão de segurança independente e correções |
 | ✅ C14 | Publicação `pep.exe` validada |
 | ✅ C16 | Configuração automática (2026-09-14): `pep config auto`, tela de primeira execução no menu e opção em "Ambientes e versões" — Atual\Release + 4 legadas mais novas ativas (ordem numérica), sem TFVC |
+| ✅ C17 | Login automático do TFS (2026-09-14): `pep login` removido; em TF30063 o CLI abre o login do tf.exe (uma tentativa por execução, também com consultas paralelas), confirma o acesso e repete a consulta; merge/get só são repetidos se nada foi processado |
 | ✅ C15 | Instalador `PEPCLI-Setup` (janela única, por usuário, modo silencioso, 34 testes) + ícone CLI `assets/pep-cli.ico` |

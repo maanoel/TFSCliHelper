@@ -41,6 +41,20 @@ public sealed class FakeTfvcClient : ITfvcClient
 
   public HashSet<string> Outdated { get; } = new(StringComparer.OrdinalIgnoreCase);
 
+  private volatile bool _requiresLogin;
+
+  /// <summary>Enquanto verdadeiro, toda operação responde TF30063 (sem credencial em cache), até <see cref="Login"/>.</summary>
+  public bool RequiresLogin
+  {
+    get => _requiresLogin;
+    set => _requiresLogin = value;
+  }
+
+  /// <summary>Simula o login concluído no tf.exe (credencial em cache).</summary>
+  public void Login() => RequiresLogin = false;
+
+  public const string AuthErrorOutput = @"TF30063: você não está autorizado a acessar totvstfs.visualstudio.com\totvstfs.";
+
   public int MergeCount => Calls.Count(c => c.StartsWith("merge:", StringComparison.Ordinal));
 
   public int GetCount => Calls.Count(c => c.StartsWith("get:", StringComparison.Ordinal));
@@ -48,6 +62,8 @@ public sealed class FakeTfvcClient : ITfvcClient
   public Task<WorkfoldQuery> GetWorkfoldAsync(string localPath, CancellationToken cancellationToken)
   {
     Record($"workfold:{localPath}");
+    if (RequiresLogin)
+      return Task.FromResult(new WorkfoldQuery(Unauthorized(), null));
     if (WorkfoldStatus != TfStatus.Success)
       return Task.FromResult(new WorkfoldQuery(Result(WorkfoldStatus), null));
 
@@ -65,12 +81,16 @@ public sealed class FakeTfvcClient : ITfvcClient
   public Task<TfResult> ListWorkspacesAsync(string collection, CancellationToken cancellationToken)
   {
     Record("workspaces");
+    if (RequiresLogin)
+      return Task.FromResult(Unauthorized());
     return Task.FromResult(Result(WorkfoldStatus));
   }
 
   public Task<ChangesetQuery> GetChangesetAsync(int changeset, string collection, CancellationToken cancellationToken)
   {
     Record($"changeset:{changeset}");
+    if (RequiresLogin)
+      return Task.FromResult(new ChangesetQuery(Unauthorized(), null));
     return Task.FromResult(ChangesetStatus == TfStatus.Success && Changeset is not null
       ? new ChangesetQuery(Result(TfStatus.Success), Changeset)
       : new ChangesetQuery(Result(ChangesetStatus == TfStatus.Success ? TfStatus.Failed : ChangesetStatus), null));
@@ -79,12 +99,16 @@ public sealed class FakeTfvcClient : ITfvcClient
   public Task<ItemListQuery> GetPendingChangesAsync(string localPath, CancellationToken cancellationToken)
   {
     Record($"status:{localPath}");
+    if (RequiresLogin)
+      return Task.FromResult(new ItemListQuery(Unauthorized(), []));
     return Task.FromResult(new ItemListQuery(Result(TfStatus.Success), Pending.TryGetValue(localPath, out var list) ? list.ToList() : []));
   }
 
   public Task<ItemListQuery> GetConflictsAsync(string localPath, CancellationToken cancellationToken)
   {
     Record($"resolve-preview:{localPath}");
+    if (RequiresLogin)
+      return Task.FromResult(new ItemListQuery(Unauthorized(), []));
     if (ConflictStatus != TfStatus.Success)
       return Task.FromResult(new ItemListQuery(Result(ConflictStatus), []));
     return Task.FromResult(new ItemListQuery(Result(TfStatus.Success), Conflicts.TryGetValue(localPath, out var list) ? list.ToList() : []));
@@ -93,6 +117,8 @@ public sealed class FakeTfvcClient : ITfvcClient
   public Task<CandidateQuery> GetMergeCandidatesAsync(string sourceServerPath, string targetServerPath, int changeset, string workingDirectory, CancellationToken cancellationToken)
   {
     Record($"candidate:{targetServerPath}");
+    if (RequiresLogin)
+      return Task.FromResult(new CandidateQuery(Unauthorized(), new HashSet<int>()));
     if (CandidateStatus.TryGetValue(targetServerPath, out var status) && status != TfStatus.Success)
       return Task.FromResult(new CandidateQuery(Result(status, 100, "TF14087: sem relação de branch."), new HashSet<int>()));
 
@@ -103,6 +129,8 @@ public sealed class FakeTfvcClient : ITfvcClient
   public Task<ItemListQuery> PreviewMergeAsync(string sourceServerPath, string targetServerPath, int changeset, string workingDirectory, CancellationToken cancellationToken)
   {
     Record($"merge-preview:{targetServerPath}");
+    if (RequiresLogin)
+      return Task.FromResult(new ItemListQuery(Unauthorized(), []));
     var status = PreviewStatus.TryGetValue(targetServerPath, out var configured) ? configured : TfStatus.Success;
     var line = status == TfStatus.PartialSuccess
       ? $"Conflito (mesclar, editar): {sourceServerPath}/a.cs;C1~C1 -> {targetServerPath}/a.cs;C0"
@@ -113,6 +141,8 @@ public sealed class FakeTfvcClient : ITfvcClient
   public Task<TfResult> MergeChangesetAsync(string sourceServerPath, string targetServerPath, int changeset, string workingDirectory, Action<string>? onOutputLine, CancellationToken cancellationToken)
   {
     Record($"merge:{workingDirectory}");
+    if (RequiresLogin)
+      return Task.FromResult(Unauthorized());
     if (cancellationToken.IsCancellationRequested)
       return Task.FromResult(Result(TfStatus.Cancelled, -1));
 
@@ -132,12 +162,16 @@ public sealed class FakeTfvcClient : ITfvcClient
   public Task<ItemListQuery> PreviewGetAsync(string localPath, CancellationToken cancellationToken)
   {
     Record($"get-preview:{localPath}");
+    if (RequiresLogin)
+      return Task.FromResult(new ItemListQuery(Unauthorized(), []));
     return Task.FromResult(new ItemListQuery(Result(TfStatus.Success), Outdated.Contains(localPath) ? [$"{localPath}\\pasta:"] : []));
   }
 
   public Task<TfResult> GetLatestAsync(string localPath, Action<string>? onOutputLine, CancellationToken cancellationToken)
   {
     Record($"get:{localPath}");
+    if (RequiresLogin)
+      return Task.FromResult(Unauthorized());
     var status = GetStatus.TryGetValue(localPath, out var configured) ? configured : TfStatus.Success;
     return Task.FromResult(Result(status, status switch { TfStatus.Success => 0, TfStatus.PartialSuccess => 1, _ => 100 }));
   }
@@ -152,6 +186,8 @@ public sealed class FakeTfvcClient : ITfvcClient
     lock (_callsGate)
       Calls.Add(call);
   }
+
+  private static TfResult Unauthorized() => Result(TfStatus.AuthError, 100, AuthErrorOutput);
 
   private static TfResult Result(TfStatus status, int exitCode = 0, string output = "") =>
     new(status, status == TfStatus.Success ? 0 : exitCode == 0 ? 100 : exitCode, output, TimeSpan.FromMilliseconds(5), "tf fake");

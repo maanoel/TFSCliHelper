@@ -49,7 +49,7 @@ public sealed class DoctorService
         checks.Add(new("Configuração", "Arquivo", CheckStatus.Ok, load.Path));
         break;
       case ConfigLoadStatus.Missing:
-        checks.Add(new("Configuração", "Arquivo", CheckStatus.Fail, $"Não encontrado: {load.Path}", "Execute 'pep config init'."));
+        checks.Add(new("Configuração", "Arquivo", CheckStatus.Fail, $"Não encontrado: {load.Path}", "Execute 'pep' (configura automaticamente) ou 'pep config auto'."));
         break;
       default:
         checks.Add(new("Configuração", "Arquivo", CheckStatus.Fail, string.Join(" | ", load.Errors), "Corrija o arquivo e execute 'pep config validate'."));
@@ -98,7 +98,7 @@ public sealed class DoctorService
     var catalog = VersionCatalog.FromConfig(config);
     if (!catalog.IsConfigured)
     {
-      checks.Add(new("Catálogo", "Versões", CheckStatus.Fail, "Nenhuma versão atual configurada.", "Execute 'pep env discover' e 'pep env configure'."));
+      checks.Add(new("Catálogo", "Versões", CheckStatus.Fail, "Nenhuma versão atual configurada.", "Execute 'pep config auto'."));
     }
     else
     {

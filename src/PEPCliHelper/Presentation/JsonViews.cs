@@ -1,5 +1,6 @@
-using PEPCliHelper.Core.Build;
+﻿using PEPCliHelper.Core.Build;
 using PEPCliHelper.Core.Get;
+using PEPCliHelper.Core.LocalTools;
 using PEPCliHelper.Core.Merge;
 using PEPCliHelper.Core.Tfvc;
 
@@ -131,6 +132,9 @@ public static class JsonViews
       avisos = t.Warnings,
     }),
   };
+
+  public static object StoppedHosts(IEnumerable<TerminationResult> results) =>
+    results.Select(r => new { pid = r.Candidate.Process.Pid, versao = r.Candidate.Version?.Id, encerrado = r.Terminated, mensagem = r.Message }).ToList();
 
   public static object BuildResult(BuildExecutionResult result) => new
   {

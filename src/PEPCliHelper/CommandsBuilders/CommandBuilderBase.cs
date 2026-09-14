@@ -33,7 +33,7 @@ public abstract class CommandBuilderBase : ICommandBuilder
         "Informe a versão completa (ex.: 12.1.2606)."),
       VersionResolutionStatus.Inactive => throw new UsageException(
         $"A versão{role} '{resolution.Version!.Id}' está desativada no catálogo.",
-        "Ative-a com 'pep env configure' (respeitando o limite de 4 legadas) ou escolha outra versão."),
+        "A configuração automática ativa as 4 legadas mais novas; escolha uma versão ativa (veja 'pep env list')."),
       _ => throw new UsageException(
         $"Versão{role} desconhecida: '{token}'.",
         $"Versões ativas: {string.Join(", ", catalog.Active.Select(v => v.Id))}. Veja 'pep env list'."),

@@ -71,7 +71,7 @@ public sealed partial class AutoConfigurator
     if (legacy.Count < ConfigValidator.MaxActiveLegacy)
       warnings.Add($"Menos de {ConfigValidator.MaxActiveLegacy} legadas encontradas em {Path.Combine(config.LocalRoot, LegacyFolder)} ({legacy.Count}).");
     if (inactive.Count > 0)
-      warnings.Add($"{inactive.Count} legada(s) mais antiga(s) ficaram desativadas: {string.Join(", ", inactive.Select(v => v.Id))}. Ative com 'pep env configure' se precisar.");
+      warnings.Add($"{inactive.Count} legada(s) mais antiga(s) ficaram desativadas: {string.Join(", ", inactive.Select(v => v.Id))}. Apenas as 4 legadas mais novas ficam ativas.");
 
     var proposed = (current is null ? [] : new[] { current }).Concat(active).Concat(inactive).ToList();
     foreach (var version in proposed.Where(v => !v.HasProjects))
@@ -92,7 +92,7 @@ public sealed partial class AutoConfigurator
     if (_fileSystem.DirectoryExists(folder))
       return Describe(config, VersionCatalog.CurrentToken, folder, isCurrent: true, active: true);
 
-    errors.Add($"Pasta da versão atual não encontrada: {folder}. Verifique a raiz local ('raizLocal') ou use 'pep env configure'.");
+    errors.Add($"Pasta da versão atual não encontrada: {folder}. Verifique a raiz local ('raizLocal').");
     return null;
   }
 
@@ -125,7 +125,7 @@ public sealed partial class AutoConfigurator
     LocalPath.Normalize(folder),
     CatalogEditor.ToConfigLocalPath(config.LocalRoot, folder),
     DiscoveryService.ConventionServerPath(config, folder) ?? string.Empty,
-    config.Projects.Where(p => _fileSystem.DirectoryExists(Path.Combine(folder, p.LocalFolder))).Select(p => p.Alias).ToList());
+    VersionCatalog.PrincipalFirst(config.Projects).Where(p => _fileSystem.DirectoryExists(Path.Combine(folder, p.LocalFolder))).Select(p => p.Alias).ToList());
 
   /// <summary>
   /// Monta a lista de versões: as propostas substituem entradas com o mesmo id ou a mesma pasta (mantendo o workspace);

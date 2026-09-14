@@ -1,6 +1,5 @@
 using PEPCliHelper.CommandsBuilders;
 using PEPCliHelper.Core.Catalog;
-using PEPCliHelper.Core.Common;
 using PEPCliHelper.Core.Configuration;
 using PEPCliHelper.Core.Environments;
 using PEPCliHelper.Presentation;
@@ -8,14 +7,12 @@ using PEPCliHelper.Presentation;
 namespace PEPCliHelper.Menus;
 
 /// <summary>
-/// Primeira execução (decisão de 2026-09-14): sem configuração ou sem versão atual, oferece a configuração automática
-/// antes do menu. A seleção da primeira opção é a confirmação. Configuração inválida nunca é sobrescrita.
+/// Primeira execução (decisão de 2026-09-14): sem configuração ou sem versão atual, aplica a configuração automática
+/// sem nenhuma pergunta e avisa o usuário. Não existe configuração manual. Configuração inválida nunca é sobrescrita.
 /// </summary>
 public sealed class FirstRunSetup
 {
-  public const string AutoOption = "Aplicar configuração automática (recomendado)";
-  public const string ManualOption = "Configurar manualmente (pep env configure)";
-  public const string SkipOption = "Agora não";
+  public const string ReadyMessage = "Configuração automática concluída: o PEP CLI está pronto para uso.";
 
   private readonly AppServices _services;
 
@@ -33,38 +30,45 @@ public sealed class FirstRunSetup
       || (load.Status == ConfigLoadStatus.Loaded && !VersionCatalog.FromConfig(load.Config!).IsConfigured);
   }
 
-  public async Task RunAsync(CancellationToken cancellationToken)
+  /// <summary>Aplica a configuração automática se necessário. Retorna true se o PEP CLI ficou configurado.</summary>
+  public bool EnsureConfigured()
   {
-    var (baseConfig, status) = ConfigAutoBuilder.LoadBase(_services);
-    var proposal = new AutoConfigurator(_services.FileSystem).Propose(baseConfig);
+    if (!IsNeeded())
+      return true;
 
-    Ui.Title("Primeira configuração");
-    Ui.Muted(status == ConfigLoadStatus.Missing
-      ? $"  Nenhuma configuração encontrada em {_services.ConfigStore.Path}. Proposta detectada em {baseConfig.LocalRoot}:"
-      : $"  A configuração não tem versão atual. Proposta detectada em {baseConfig.LocalRoot}:");
-    ConfigAutoBuilder.Render(Ui, proposal);
-
-    var options = proposal.CanApply ? new[] { AutoOption, ManualOption, SkipOption } : [ManualOption, SkipOption];
-    var choice = await Ui.SelectAsync("Como deseja configurar?", options, o => o, cancellationToken);
-
-    switch (choice)
+    var (baseConfig, status) = ConfigAutoBuilder.LoadBase(_services, force: false);
+    var quiet = Ui.Json;
+    if (!quiet)
     {
-      case AutoOption:
-        var backup = ConfigAutoBuilder.Apply(_services, proposal);
-        ConfigAutoBuilder.RenderApplied(_services, proposal, backup);
-        break;
-
-      case ManualOption:
-        if (status == ConfigLoadStatus.Missing && await PepApp.DispatchAsync(_services, ["config", "init"], cancellationToken) != ExitCodes.Success)
-          return;
-        await PepApp.DispatchAsync(_services, ["env", "configure"], cancellationToken);
-        break;
-
-      default:
-        Ui.Muted("  Sem problemas: configure depois em \"Ambientes e versões\" ou com 'pep config auto'.");
-        break;
+      Ui.Title("Primeira configuração");
+      Ui.Info(status == ConfigLoadStatus.Missing
+        ? $"Nenhuma configuração encontrada. Configurando o PEP CLI automaticamente a partir de {baseConfig.LocalRoot}..."
+        : $"A configuração não tem versão atual. Configurando automaticamente a partir de {baseConfig.LocalRoot}...");
     }
 
-    Ui.Blank();
+    var proposal = new AutoConfigurator(_services.FileSystem).Propose(baseConfig);
+    if (!proposal.CanApply)
+    {
+      if (!quiet)
+      {
+        ConfigAutoBuilder.Render(Ui, proposal);
+        Ui.Fail("Não foi possível configurar automaticamente. Nada foi gravado.");
+        Ui.Hint($"Confira se existe {Path.Combine(baseConfig.LocalRoot, AutoConfigurator.CurrentFolder, AutoConfigurator.CurrentRelease)} e execute 'pep config auto'.");
+        Ui.Blank();
+      }
+
+      return false;
+    }
+
+    var backup = ConfigAutoBuilder.Apply(_services, proposal);
+    if (!quiet)
+    {
+      ConfigAutoBuilder.Render(Ui, proposal);
+      ConfigAutoBuilder.RenderApplied(_services, proposal, backup);
+      Ui.Success(ReadyMessage);
+      Ui.Blank();
+    }
+
+    return true;
   }
 }

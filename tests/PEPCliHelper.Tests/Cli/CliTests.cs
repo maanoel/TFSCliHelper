@@ -25,6 +25,8 @@ internal sealed class CliHarness
 
   public StringWriter Output { get; } = new();
 
+  public FakeAttachedRunner Attached { get; } = new();
+
   public CliHarness(bool withConfig = true, params string[] targets)
   {
     Tfvc = TestData.HealthyTfvc(FileSystem, targets.Length == 0 ? ["12.1.2606", "12.1.2602"] : targets);
@@ -54,7 +56,8 @@ internal sealed class CliHarness
       return new AppServices(effective, ui, FileSystem, executor, Processes, TimeProvider.System,
         new ConfigStore(FileSystem, ConfigPath), new JsonExecutionJournal(FileSystem, @"C:\hist", TimeProvider.System),
         _ => Tfvc,
-        _ => new ToolLocator(FileSystem, executor, new ToolsConfig(), @"C:\sem\vswhere.exe"));
+        _ => new ToolLocator(FileSystem, executor, new ToolsConfig(), @"C:\sem\vswhere.exe"),
+        Attached);
     });
   }
 
@@ -404,14 +407,15 @@ public class CliBehaviorTests
   }
 
   [Fact]
-  public async Task ComandoSemConfiguracao_OrientaConfigInit()
+  public async Task ComandoSemConfiguracaoESemPastas_OrientaConfigAuto()
   {
     var cli = new CliHarness(withConfig: false);
 
     var exit = await cli.RunAsync("env", "list");
 
     Assert.Equal(ExitCodes.Usage, exit);
-    Assert.Contains("pep config init", cli.Text);
+    Assert.Contains("pep config auto", cli.Text);
+    Assert.False(cli.FileSystem.FileExists(CliHarness.ConfigPath));
   }
 
   [Fact]
@@ -461,47 +465,30 @@ public class CliBehaviorTests
   }
 
   [Fact]
-  public async Task EnvConfigure_RotacaoNaoInterativa_GravaCatalogoSemExcluirPastas()
-  {
-    var cli = new CliHarness();
-
-    var exit = await cli.RunAsync("env", "configure", "--atual", "12.1.2614", "--legado", "12.1.2606", "--yes");
-
-    Assert.Equal(ExitCodes.Success, exit);
-    var saved = new ConfigStore(cli.FileSystem, CliHarness.ConfigPath).Load();
-    Assert.Equal(ConfigLoadStatus.Loaded, saved.Status);
-    Assert.Contains(saved.Config!.Versions, v => v.Id == "12.1.2614" && v.IsCurrent && v.Active);
-    Assert.Contains(saved.Config.Versions, v => v.Id == "12.1.2602" && !v.Active);
-    Assert.Empty(cli.FileSystem.Deleted);
-    Assert.Equal(0, cli.Tfvc.MergeCount + cli.Tfvc.GetCount);
-  }
-
-  [Fact]
-  public async Task EnvConfigure_SemMapeamento_UsaConvencaoDeCaminhoTfvcSemPerguntar()
-  {
-    var cli = new CliHarness();
-    cli.Tfvc.Workfolds.Clear();
-    var empty = PepConfig.CreateDefault();
-    empty.LocalRoot = TestData.Root;
-    new ConfigStore(cli.FileSystem, CliHarness.ConfigPath).Save(empty);
-
-    var exit = await cli.RunAsync("env", "configure", "--atual", "12.1.2614", "--legado", "12.1.2606", "--yes");
-
-    Assert.True(exit == ExitCodes.Success, cli.Text);
-    var saved = new ConfigStore(cli.FileSystem, CliHarness.ConfigPath).Load().Config!;
-    Assert.Equal("$/Linha-RM/Atual/Release", saved.Versions.Single(v => v.Id == "12.1.2614").ServerPath);
-    Assert.Equal("$/Linha-RM/Legado/12.1.2606", saved.Versions.Single(v => v.Id == "12.1.2606").ServerPath);
-  }
-
-  [Fact]
-  public async Task Login_NaoInterativo_ErroDeUsoSemExecutarTf()
+  public async Task Login_ComandoRemovido_Exit2InformaLoginAutomatico()
   {
     var cli = new CliHarness();
 
     var exit = await cli.RunAsync("login", "--non-interactive");
 
     Assert.Equal(ExitCodes.Usage, exit);
-    Assert.Contains("terminal interativo", cli.Text);
+    Assert.Contains("automático", cli.Text);
+    Assert.Empty(cli.Attached.Executed);
+  }
+
+  [Fact]
+  public async Task MergeDryRun_SemCredencialNaoInterativo_NaoAbreLoginEOrienta()
+  {
+    var cli = new CliHarness();
+    cli.Tfvc.RequiresLogin = true;
+
+    var exit = await cli.RunAsync("merge", "--project", "back", "--source", "atual", "--target", "2606", "--changeset", "861799", "--dry-run", "--json");
+
+    Assert.NotEqual(ExitCodes.Success, exit);
+    Assert.Empty(cli.Attached.Executed);
+    Assert.Contains("TF30063", cli.Text);
+    Assert.Contains("modo não interativo", cli.Text);
+    Assert.DoesNotContain("pep login", cli.Text);
   }
 
   [Fact]

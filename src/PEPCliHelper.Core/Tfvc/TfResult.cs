@@ -80,7 +80,8 @@ public static class TfErrorClassifier
   {
     TfStatus.NetworkError => "Verifique VPN/proxy e o acesso à coleção no navegador; depois execute 'pep doctor'.",
     TfStatus.AuthError =>
-      "O tf.exe não tem credencial em cache (TF30063). Execute 'pep login' em um terminal e entre com a conta da coleção; depois 'pep doctor'.",
+      "Sem credencial do tf.exe (TF30063). Em um terminal interativo o PEP CLI abre o login do TFS automaticamente e continua; " +
+      "em modo não interativo (--json/--non-interactive), rode o comando uma vez em um terminal para autenticar.",
     TfStatus.NotRecognized => "A versão do tf.exe não reconheceu o comando. Verifique a versão em 'pep version' e registre em docs/HOMOLOGACAO.md.",
     TfStatus.Cancelled => "A operação foi interrompida. Inspecione o estado com 'pep pending list'.",
     _ => "Leia a mensagem do tf.exe acima e consulte 'pep history show <id>' para a saída completa.",

@@ -38,14 +38,30 @@ public static class PepApp
     if (tokens.Count == 0)
     {
       if (!options.Help && services.Ui.CanPrompt)
-        return await new InteractiveMenu(services, cancellation).RunAsync();
+        return await new InteractiveMenu(services, cancellation, createServices).RunAsync();
 
       HelpRenderer.RenderGeneral(services.Ui, services.Chains);
       return options.Help ? ExitCodes.Success : ExitCodes.Usage;
     }
 
+    if (NeedsConfiguration(tokens, options))
+    {
+      try
+      {
+        new FirstRunSetup(services).EnsureConfigured();
+      }
+      catch (PepCliException)
+      {
+        // Configuração inválida: não é sobrescrita; o próprio comando reporta o erro com orientação.
+      }
+    }
+
     return await DispatchAsync(services, tokens, cancellation.Token);
   }
+
+  /// <summary>Primeira execução automática também para comandos diretos; ajuda e comandos de configuração não disparam.</summary>
+  private static bool NeedsConfiguration(IReadOnlyList<string> tokens, GlobalOptions options) =>
+    !options.Help && tokens[0] is not ("help" or "config" or "version");
 
   public static async Task<int> DispatchAsync(AppServices services, IReadOnlyList<string> tokens, CancellationToken cancellationToken)
   {

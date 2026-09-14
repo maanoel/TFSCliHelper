@@ -207,6 +207,14 @@ public sealed class Ui
     return (await prompt.ShowAsync(Console, cancellationToken)).Trim();
   }
 
+  /// <summary>Lê uma linha livre (pode ser vazia) com o rótulo informado, ex.: 'pep&gt;'.</summary>
+  public async Task<string> ReadLineAsync(string label, CancellationToken cancellationToken)
+  {
+    EnsureCanPrompt(label);
+    var prompt = new TextPrompt<string>($"[bold {Theme.Primary}]{Escape(label)}[/]").AllowEmpty();
+    return (await prompt.ShowAsync(Console, cancellationToken)).Trim();
+  }
+
   public void RenderError(PepCliException error)
   {
     if (Json)
